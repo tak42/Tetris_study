@@ -1,6 +1,6 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -28,7 +28,7 @@ const Grid = styled.div`
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  max-width: 800px;
+  max-width: 500px;
   margin-top: 3rem;
 
   @media (max-width: 600px) {
@@ -36,115 +36,49 @@ const Grid = styled.div`
     width: 100%;
   }
 `
-const Block = styled.div`
-  width: 100px;
-  height: 100px;
-  border: 1px solid white;
+const Area = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 1px solid black;
+  background-color: white;
 `
-
-const Stone = styled.div<{ val: number }>`
-  height: 60px;
-  margin: 1rem;
-  background-color: ${(props) => (props.val === 1 ? 'white' : 'black')};
-  border-radius: 50%;
-`
-
 type Cell = { row: number; col: number }
 const Home: NextPage = () => {
+  // Tetrisの特徴
+  // 1.ある一定の時間がたったらブロックが投下される
+  // 2.時間経過中は下り続ける
+  // 3.１行うまったらクリアされる
+  // 4.クリア行より上の行は１段さがる
+  // 5.最上段より上にブロックが来たら負け
+  const longRod: number[] = [4]
+  const square: number[] = [1, 2]
+  const [timer, setTimer] = useState(0)
   // prettier-ignore
-  const [board, setBoard] = useState([
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,1,2,0,0,0],
-    [0,0,0,2,1,0,0,0],
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0],
-    [0,0,0,0,0,0,0,0]
+  const [field, setField] = useState([
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ])
-  const { whiteCount, blackCount } = useMemo(() => {
-    let blCo = 0 // 黒の石の数
-    let whCo = 0 // 白の石の数
-    for (let x = 0; x < 8; x++) {
-      for (let y = 0; y < 8; y++) {
-        if (board[x][y] === 1) {
-          whCo += 1
-        }
-        if (board[x][y] === 2) {
-          blCo += 1
-        }
-      }
-    }
-    return { whiteCount: whCo, blackCount: blCo }
-  }, [board])
-  useEffect(() => {
-    console.log(whiteCount + blackCount)
-    if (whiteCount + blackCount === 64) {
-      if (whiteCount > blackCount) {
-        alert('白の勝ちです。')
-      } else {
-        alert('黒の勝ちです。')
-      }
-    }
-  }, [whiteCount, blackCount])
-  const [turnColor, setTurnColor] = useState(1)
-  // const boardCommit = (newBoard: number[][], reverseColor: number) => {
-  //   return new Promise((resolve, reject) => {
-  //     setBoard(newBoard) // boardに変更を反映
-  //     setTurnColor(reverseColor)
-  //     resolve(reverseColor)
-  //   })
-  // }
-  const onClick = (x: number, y: number) => {
-    const newBoard: number[][] = JSON.parse(JSON.stringify(board)) // boardを直接書き換えないようにコピー作成
-    const reverseColor: number = turnColor === 1 ? 2 : 1
-    // prettier-ignore
-    const directions: number[][] = [
-      [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]
-    ]
-    const candidates: Cell[] = []
-    for (const direction of directions) {
-      for (let n = 1; n < 8; n++) {
-        const newX = x + direction[0] * n
-        const newY = y + direction[1] * n
-        if (newX < 0 || newY < 0 || newX > 7 || newY > 7) break
-        if (newBoard[newX][newY] === reverseColor) {
-          candidates.push({ row: newX, col: newY })
-        } else if (newBoard[newX][newY] === turnColor) {
-          candidates.push({ row: newX, col: newY })
-          break
-        } else {
-          break
-        }
-      }
-      if (candidates.length > 1) {
-        const lastCell = candidates[candidates.length - 1]
-        if (newBoard[lastCell.row][lastCell.col] === turnColor) {
-          candidates.splice(candidates.length - 1, 0)
-          for (const cell of candidates) {
-            newBoard[cell.row][cell.col] = turnColor
-          }
-          newBoard[x][y] = turnColor
-        }
-      }
-      candidates.splice(0, candidates.length)
-    }
-    if (newBoard[x][y] === turnColor) {
-      setBoard(newBoard) // boardに変更を反映
-      setTurnColor(reverseColor)
-      // homeがレンダリングされた後に判定する必要がある
-      // boardCommit(newBoard, reverseColor).then(() => {
-      // console.log(whiteCount + blackCount)
-      // if (whiteCount + blackCount === 64) {
-      //   if (whiteCount > blackCount) {
-      //     alert('白の勝ちです。')
-      //   } else {
-      //     alert('黒の勝ちです。')
-      //   }
-      // }
-      // })
-    }
-  }
+  const blockDown = useMemo(() => {
+    // timerのカウントごとにブロックを落としていく処理
+  }, [timer])
   return (
     <Container>
       <Head>
@@ -152,16 +86,13 @@ const Home: NextPage = () => {
         <meta name="description" content="Generated by create next app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
       <Main>
-        <h1>{turnColor === 1 ? '白の番です。' : '黒の番です。'}</h1>
         <Grid>
-          {board.map((row, x) =>
-            row.map((color, y) => (
-              <Block key={`${x}-${y}`} onClick={() => onClick(x, y)}>
+          {field.map((row, x) =>
+            row.map((col, y) => (
+              <Area key={`${x}-${y}`}>
                 {x}, {y}
-                {color > 0 && <Stone val={color} />}
-              </Block>
+              </Area>
             ))
           )}
         </Grid>
