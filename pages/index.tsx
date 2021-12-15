@@ -81,6 +81,7 @@ const Home: NextPage = () => {
     for (let n = 0; n < longRod[0]; n++) {
       newField[n + blockRow][4] = 1
     }
+    newField[blockRow - 1 < 0 ? 0 : blockRow - 1][4] = 0
     return newField
   }, [field, timer])
 
