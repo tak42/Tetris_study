@@ -51,12 +51,24 @@ const Home: NextPage = () => {
   // 3.１行うまったらクリアされる
   // 4.クリア行より上の行は１段さがる
   // 5.最上段より上にブロックが来たら負け
-  const longRod: number[] = [4]
+  // prettier-ignore
+  const longRod: number[][] = [
+    [1],
+    [1],
+    [1],
+    [1]
+  ]
+  const square: number[][] = [
+    [1, 1],
+    [1, 1],
+  ]
   const [timer, setTimer] = useState(0)
-  const [blockHead, setblockHead] = useState(0)
-  const [sidePoint, setsidePoint] = useState(4)
-  const moveLeft = () => setsidePoint((sidePoint) => --sidePoint)
-  const moveRight = () => setsidePoint((sidePoint) => ++sidePoint)
+  const [blockHead, setBlockHead] = useState(0)
+  const [currentParts, setCurrentParts] = useState([[0]])
+  const [sidePoint, setSidePoint] = useState(4)
+  const [saveParts, setSaveParts] = useState([{}])
+  const moveLeft = () => setSidePoint((sidePoint) => --sidePoint)
+  const moveRight = () => setSidePoint((sidePoint) => ++sidePoint)
   useKey('ArrowLeft', moveLeft)
   useKey('ArrowRight', moveRight)
   // prettier-ignore
@@ -82,25 +94,49 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ])
-  const blockDown = useMemo(() => {
-    const newField = new Array(20)
+  const partsDown = useMemo(() => {
+    const addField = new Array(20)
     for (let y = 0; y < 20; y++) {
-      newField[y] = new Array(10).fill(0)
+      addField[y] = new Array(10).fill(0)
     }
-    for (let n = 0; n < longRod[0]; n++) {
-      newField[n + blockHead][sidePoint] = 1
+    for (let n = 0; n < currentParts.length; n++) {
+      addField[n + blockHead][sidePoint] = 1
     }
-    // newField[blockHead - 1 < 0 ? 0 : blockHead - 1][sidePoint] = 0
-    return newField
+    return addField
+  }, [sidePoint])
+
+  const partsPosition = useMemo(() => {
+    const fieldData: number[] = partsDown.flat()
+    const savePartsList = saveParts
+    const idxList = []
+    for (let i = 0; i < fieldData.length; i++) {
+      if (fieldData[i] === 1) idxList.push(i)
+    }
+    for (const elm of idxList) {
+      const exclusion = Math.floor(elm / 10)
+      const surplus = elm % 10
+      savePartsList.push({ x: exclusion, y: surplus })
+    }
+    return savePartsList
+  }, [partsDown])
+
+  const displayField = useMemo(() => {
+    const pp = partsPosition
+    // const newField: number[][] = JSON.parse(JSON.stringify(field))
+    for (const elm of pp) {
+      console.log(elm)
+      // newField[elm.x][elm.y] = 1
+    }
+    return partsDown
   }, [timer])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const time = timer + 1
       setTimer(time)
-      // console.log(timer)
-      setField(blockDown)
-      blockHead === 16 ? setblockHead(0) : setblockHead(blockHead + 1)
+      setCurrentParts(longRod) // partsを切り替えていく
+      setField(displayField)
+      blockHead === 16 ? setBlockHead(0) : setBlockHead(blockHead + 1)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
