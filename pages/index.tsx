@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
+import { useKey } from 'react-use'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -52,7 +53,12 @@ const Home: NextPage = () => {
   // 5.最上段より上にブロックが来たら負け
   const longRod: number[] = [4]
   const [timer, setTimer] = useState(0)
-  const [blockRow, setBlockRow] = useState(0)
+  const [blockHead, setblockHead] = useState(0)
+  const [sidePoint, setsidePoint] = useState(4)
+  const moveLeft = () => setsidePoint((sidePoint) => --sidePoint)
+  const moveRight = () => setsidePoint((sidePoint) => ++sidePoint)
+  useKey('ArrowLeft', moveLeft)
+  useKey('ArrowRight', moveRight)
   // prettier-ignore
   const [field, setField] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -77,13 +83,16 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ])
   const blockDown = useMemo(() => {
-    const newField: number[][] = JSON.parse(JSON.stringify(field))
-    for (let n = 0; n < longRod[0]; n++) {
-      newField[n + blockRow][4] = 1
+    const newField = new Array(20)
+    for (let y = 0; y < 20; y++) {
+      newField[y] = new Array(10).fill(0)
     }
-    newField[blockRow - 1 < 0 ? 0 : blockRow - 1][4] = 0
+    for (let n = 0; n < longRod[0]; n++) {
+      newField[n + blockHead][sidePoint] = 1
+    }
+    // newField[blockHead - 1 < 0 ? 0 : blockHead - 1][sidePoint] = 0
     return newField
-  }, [field, timer])
+  }, [timer])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -91,7 +100,7 @@ const Home: NextPage = () => {
       setTimer(time)
       // console.log(timer)
       setField(blockDown)
-      blockRow === 16 ? setBlockRow(0) : setBlockRow(blockRow + 1)
+      blockHead === 16 ? setblockHead(0) : setblockHead(blockHead + 1)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
