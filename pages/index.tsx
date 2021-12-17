@@ -63,8 +63,8 @@ const Home: NextPage = () => {
     [1, 1],
   ]
   const [timer, setTimer] = useState(0)
-  const [blockHead, setBlockHead] = useState(0)
-  const [currentParts, setCurrentParts] = useState([[0]])
+  const [stageNumber, setstageNumber] = useState(0)
+  // const [currentParts, setCurrentParts] = useState([[0]])
   const [sidePoint, setSidePoint] = useState(4)
   const [saveParts, setSaveParts] = useState([{}])
   const moveLeft = () => setSidePoint((sidePoint) => --sidePoint)
@@ -99,49 +99,46 @@ const Home: NextPage = () => {
     for (let y = 0; y < 20; y++) {
       addField[y] = new Array(10).fill(0)
     }
-    for (let n = 0; n < currentParts.length; n++) {
-      addField[n + blockHead][sidePoint] = 1
+    for (let n = 0; n < longRod.length; n++) {
+      addField[n + stageNumber][sidePoint] = 1
     }
     return addField
-  }, [sidePoint])
-
-  const partsPosition = useMemo(() => {
-    const fieldData: number[] = partsDown.flat()
-    const savePartsList = saveParts
-    const idxList = []
-    for (let i = 0; i < fieldData.length; i++) {
-      if (fieldData[i] === 1) idxList.push(i)
-    }
-    for (const elm of idxList) {
-      const exclusion = Math.floor(elm / 10)
-      const surplus = elm % 10
-      savePartsList.push({ x: exclusion, y: surplus })
-    }
-    return savePartsList
-  }, [partsDown])
-
-  const displayField = useMemo(() => {
-    const pp = partsPosition
-    // const newField: number[][] = JSON.parse(JSON.stringify(field))
-    for (const elm of pp) {
-      console.log(elm)
-      // newField[elm.x][elm.y] = 1
-    }
-    return partsDown
-  }, [timer])
+  }, [timer, sidePoint])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const time = timer + 1
       setTimer(time)
-      setCurrentParts(longRod) // partsを切り替えていく
-      setField(displayField)
-      blockHead === 16 ? setBlockHead(0) : setBlockHead(blockHead + 1)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
     }
+  })
+
+  useEffect(() => {
+    setField(partsDown)
+    setstageNumber((stageNumber) => (stageNumber + longRod.length < 20 ? ++stageNumber : 0))
+    if (stageNumber + longRod.length === 20) {
+      const fieldData: number[] = partsDown.flat()
+      const positionList = []
+      const idxList = []
+      const newField: number[][] = JSON.parse(JSON.stringify(field))
+      for (let i = 0; i < fieldData.length; i++) {
+        if (fieldData[i] === 1) idxList.push(i)
+      }
+      for (const elm of idxList) {
+        const exclusion = Math.floor(elm / 10)
+        const surplus = elm % 10
+        positionList.push({ row: exclusion, col: surplus })
+      }
+      for (const position of positionList) {
+        newField[position.row][position.col] = 1
+      }
+      console.log(newField)
+      setField(newField)
+    }
   }, [timer])
+
   return (
     <Container>
       <Head>
