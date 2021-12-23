@@ -62,6 +62,29 @@ const Home: NextPage = () => {
     [1, 1],
     [1, 1],
   ]
+  // prettier-ignore
+  const field: number[][] = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ]
   const [timer, setTimer] = useState(0)
   const [stageNumber, setstageNumber] = useState(0)
   // const [currentParts, setCurrentParts] = useState([[0]])
@@ -71,29 +94,9 @@ const Home: NextPage = () => {
   const moveRight = () => setSidePoint((sidePoint) => ++sidePoint)
   useKey('ArrowLeft', moveLeft)
   useKey('ArrowRight', moveRight)
-  // prettier-ignore
-  const [field, setField] = useState([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ])
+  const [saveFld, setSaveFld] = useState(field) // 保存用field
+  const [opeFld, setOpeFld] = useState(field) //操作用（Operation）field
+
   const partsDown = useMemo(() => {
     const addField = new Array(20)
     for (let y = 0; y < 20; y++) {
@@ -104,6 +107,16 @@ const Home: NextPage = () => {
     }
     return addField
   }, [timer, sidePoint])
+
+  const fieldFusion = useMemo(() => {
+    const fusionFld = field
+    for (let x = 0; x < 20; x++) {
+      for (let y = 0; y < 10; y++) {
+        fusionFld[x][y] = Math.abs(opeFld[x][y] - saveFld[x][y])
+      }
+    }
+    return fusionFld
+  }, [opeFld, saveFld])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -116,13 +129,13 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
-    setField(partsDown)
+    setOpeFld(partsDown)
     setstageNumber((stageNumber) => (stageNumber + longRod.length < 20 ? ++stageNumber : 0))
     if (stageNumber + longRod.length === 20) {
+      const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
       const fieldData: number[] = partsDown.flat()
       const positionList = []
       const idxList = []
-      const newField: number[][] = JSON.parse(JSON.stringify(field))
       for (let i = 0; i < fieldData.length; i++) {
         if (fieldData[i] === 1) idxList.push(i)
       }
@@ -135,8 +148,9 @@ const Home: NextPage = () => {
         newField[position.row][position.col] = 1
       }
       console.log(newField)
-      setField(newField)
+      setSaveFld(newField)
     }
+    setSaveFld(fieldFusion)
   }, [timer])
 
   return (
@@ -148,7 +162,7 @@ const Home: NextPage = () => {
       </Head>
       <Main>
         <Grid>
-          {field.map((row, x) =>
+          {saveFld.map((row, x) =>
             row.map((col, y) => (
               <Area key={`${x}-${y}`} val={field[x][y]}>
                 {x}, {y}
