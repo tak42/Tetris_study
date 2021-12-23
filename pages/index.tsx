@@ -92,8 +92,31 @@ const Home: NextPage = () => {
   const [saveParts, setSaveParts] = useState([{}])
   const moveLeft = () => setSidePoint((sidePoint) => --sidePoint)
   const moveRight = () => setSidePoint((sidePoint) => ++sidePoint)
-  useKey('ArrowLeft', moveLeft)
-  useKey('ArrowRight', moveRight)
+  const render = () => {
+    // side === 'left' ? setSidePoint((sidePoint) => --point) : setSidePoint((sidePoint) => ++point)
+    partsMove()
+    // setSaveFld(landingParts)
+    // setField(fieldFusion)
+  }
+  const partsMove = () => {
+    console.log(sidePoint)
+    const addField = new Array(20)
+    for (let y = 0; y < 20; y++) {
+      addField[y] = new Array(10).fill(0)
+    }
+    for (let n = 0; n < longRod.length; n++) {
+      addField[n + stageNumber][sidePoint] = 1
+    }
+    setOpeFld(addField)
+  }
+  useKey('ArrowLeft', () => {
+    setSidePoint((sidePoint) => --sidePoint)
+    render()
+  })
+  useKey('ArrowRight', () => {
+    setSidePoint((sidePoint) => ++sidePoint)
+    render()
+  })
   const [saveFld, setSaveFld] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -140,6 +163,7 @@ const Home: NextPage = () => {
   ]) //操作用（Operation）field
 
   const partsDown = useMemo(() => {
+    console.log(sidePoint)
     const addField = new Array(20)
     for (let y = 0; y < 20; y++) {
       addField[y] = new Array(10).fill(0)
@@ -156,7 +180,6 @@ const Home: NextPage = () => {
     const positionList = []
     const idxList = []
     if (stageNumber + longRod.length === 20) {
-      console.log('landed')
       for (let i = 0; i < fieldData.length; i++) {
         if (fieldData[i] === 1) idxList.push(i)
       }
