@@ -90,41 +90,28 @@ const Home: NextPage = () => {
   // const [currentParts, setCurrentParts] = useState([[0]])
   const [sidePoint, setSidePoint] = useState(4)
   const [saveParts, setSaveParts] = useState([{}])
-  const moveLeft = () => setSidePoint((sidePoint) => --sidePoint)
-  const moveRight = () => setSidePoint((sidePoint) => ++sidePoint)
-  const render = (side: string) => {
-    side === 'left'
-      ? setSidePoint((sidePoint) => --sidePoint)
-      : setSidePoint((sidePoint) => ++sidePoint)
-    console.log(sidePoint)
-    // const addField = new Array(20)
-    // for (let y = 0; y < 20; y++) {
-    //   addField[y] = new Array(10).fill(0)
-    // }
-    // for (let n = 0; n < longRod.length; n++) {
-    //   addField[n + stageNumber][sidePoint] = 1
-    // }
-    // setField(addField)
-    // setOpeFld(partsDown)
-    // setSaveFld(landingParts)
-    // setField(fieldFusion)
+  const renderLeft = () => {
+    if (stageNumber + longRod.length < 20 && sidePoint > 0) {
+      setSidePoint((sidePoint) => --sidePoint)
+    }
+    // console.log(sidePoint)
   }
-  useKey(
-    'ArrowLeft',
-    () => {
-      render('left')
-    },
-    {},
-    [sidePoint, stageNumber]
-  )
-  useKey(
-    'ArrowRight',
-    () => {
-      render('right')
-    },
-    {},
-    [sidePoint, stageNumber]
-  )
+  const renderRight = () => {
+    if (stageNumber + longRod.length < 20 && sidePoint < 19) {
+      setSidePoint((sidePoint) => ++sidePoint)
+    }
+    // console.log(sidePoint)
+  }
+  const renderDown = () => {
+    if (stageNumber + longRod.length < 20) setstageNumber((stageNumber) => ++stageNumber)
+    // console.log(stageNumber)
+  }
+  // prettier-ignore
+  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stageNumber])
+  // prettier-ignore
+  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stageNumber])
+  // prettier-ignore
+  useKey('ArrowDown', () => { renderDown() }, {}, [stageNumber])
   const [saveFld, setSaveFld] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -184,6 +171,7 @@ const Home: NextPage = () => {
 
   const landingParts = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
+    console.log(newField)
     const fieldData: number[] = partsDown.flat()
     const positionList = []
     const idxList = []
@@ -199,9 +187,14 @@ const Home: NextPage = () => {
       for (const position of positionList) {
         newField[position.row][position.col] = 1
       }
+      // for (let x = 0; x < 20; x++) {
+      //   for (let y = 0; y < 10; y++) {
+      //     newField[x][y] = opeFld[x][y]
+      //   }
+      // }
     }
     return newField
-  }, [stageNumber, sidePoint, opeFld])
+  }, [stageNumber, sidePoint, saveFld])
 
   const fieldFusion = useMemo(() => {
     const fusionFld = new Array(20)
@@ -216,10 +209,42 @@ const Home: NextPage = () => {
     return fusionFld
   }, [stageNumber, sidePoint, opeFld, saveFld])
 
+  const fullRowDelete = useMemo(() => {
+    const rowNumberList: number[] = []
+    const rtnFld = new Array(20)
+    for (let y = 0; y < 20; y++) {
+      rtnFld[y] = new Array(10).fill(0)
+    }
+    // console.log(rtnFld)
+    saveFld.forEach((row) => {
+      rowNumberList.push(row.every((val) => val === 1) ? 1 : 0)
+    })
+    // console.log(rowNumberList)
+    // rowNumberList.sort((a, b) => { return a - b })
+    saveFld.forEach((row, i) => {
+      // 1で埋まっていない行
+      // console.log(rowNumberList[i])
+      if (rowNumberList[i] === 0) {
+        // console.log(
+        //   i +
+        //     rowNumberList.filter((val, x) => {
+        //       return val === 1 && i < x
+        //     }).length
+        // )
+        rtnFld[
+          i +
+            rowNumberList.filter((val, x) => {
+              return val === 1 && i < x
+            }).length
+        ] = row
+      }
+    })
+    // console.log(rtnFld)
+    return rtnFld
+  }, [saveFld])
+
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // const time = timer + 1
-      // setTimer(time)
       setstageNumber((stageNumber) => (stageNumber + longRod.length < 20 ? ++stageNumber : 0))
     }, 1000)
     return () => {
@@ -229,9 +254,11 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     setOpeFld(partsDown)
+    setSaveFld(fullRowDelete)
     setSaveFld(landingParts)
     setField(fieldFusion)
-  }, [stageNumber, sidePoint, saveFld, opeFld])
+    // console.log(fullRowDelete)
+  }, [stageNumber, opeFld, sidePoint])
 
   return (
     <Container>
