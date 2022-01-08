@@ -91,19 +91,19 @@ const Home: NextPage = () => {
   const [sidePoint, setSidePoint] = useState(4)
   const [saveParts, setSaveParts] = useState([{}])
   const renderLeft = () => {
-    if (stageNumber + longRod.length < 20 && sidePoint > 0) {
+    if (stageNumber + longRod.length < 19 && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
     // console.log(sidePoint)
   }
   const renderRight = () => {
-    if (stageNumber + longRod.length < 20 && sidePoint < 19) {
+    if (stageNumber + longRod.length < 19 && sidePoint < 9) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
     // console.log(sidePoint)
   }
   const renderDown = () => {
-    if (stageNumber + longRod.length < 20) setstageNumber((stageNumber) => ++stageNumber)
+    if (stageNumber + longRod.length < 19) setstageNumber((stageNumber) => ++stageNumber)
     // console.log(stageNumber)
   }
   // prettier-ignore
@@ -171,7 +171,7 @@ const Home: NextPage = () => {
 
   const landingParts = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    console.log(newField)
+    // console.log(newField)
     const fieldData: number[] = partsDown.flat()
     const positionList = []
     const idxList = []
@@ -187,11 +187,13 @@ const Home: NextPage = () => {
       for (const position of positionList) {
         newField[position.row][position.col] = 1
       }
-      // for (let x = 0; x < 20; x++) {
-      //   for (let y = 0; y < 10; y++) {
-      //     newField[x][y] = opeFld[x][y]
-      //   }
-      // }
+      newField.forEach((row: number[]) => {
+        if (row.every((val: number) => val === 1)) {
+          for (let i = 0; i < 10; i++) {
+            row[i] = 0
+          }
+        }
+      })
     }
     return newField
   }, [stageNumber, sidePoint, saveFld])
@@ -203,45 +205,11 @@ const Home: NextPage = () => {
     }
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
-        fusionFld[x][y] = opeFld[x][y] + saveFld[x][y] > 0 ? 1 : 0
+        fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
       }
     }
     return fusionFld
-  }, [stageNumber, sidePoint, opeFld, saveFld])
-
-  const fullRowDelete = useMemo(() => {
-    const rowNumberList: number[] = []
-    const rtnFld = new Array(20)
-    for (let y = 0; y < 20; y++) {
-      rtnFld[y] = new Array(10).fill(0)
-    }
-    // console.log(rtnFld)
-    saveFld.forEach((row) => {
-      rowNumberList.push(row.every((val) => val === 1) ? 1 : 0)
-    })
-    // console.log(rowNumberList)
-    // rowNumberList.sort((a, b) => { return a - b })
-    saveFld.forEach((row, i) => {
-      // 1で埋まっていない行
-      // console.log(rowNumberList[i])
-      if (rowNumberList[i] === 0) {
-        // console.log(
-        //   i +
-        //     rowNumberList.filter((val, x) => {
-        //       return val === 1 && i < x
-        //     }).length
-        // )
-        rtnFld[
-          i +
-            rowNumberList.filter((val, x) => {
-              return val === 1 && i < x
-            }).length
-        ] = row
-      }
-    })
-    // console.log(rtnFld)
-    return rtnFld
-  }, [saveFld])
+  }, [stageNumber, sidePoint, partsDown, saveFld])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -253,12 +221,9 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
-    setOpeFld(partsDown)
-    setSaveFld(fullRowDelete)
     setSaveFld(landingParts)
     setField(fieldFusion)
-    // console.log(fullRowDelete)
-  }, [stageNumber, opeFld, sidePoint])
+  }, [stageNumber, sidePoint])
 
   return (
     <Container>
