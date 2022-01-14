@@ -62,7 +62,11 @@ const Home: NextPage = () => {
     [1, 1],
     [1, 1],
   ]
-  const hanger: number[][][] = [longRod, square]
+  const convex: number[][] = [
+    [0, 1, 0],
+    [1, 1, 1],
+  ]
+  const hanger: number[][][] = [longRod, square, convex]
   // prettier-ignore
   const [field, setField] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -93,24 +97,24 @@ const Home: NextPage = () => {
   const [sidePoint, setSidePoint] = useState(4)
   const [saveParts, setSaveParts] = useState([{}])
   const renderLeft = () => {
-    if (stgNum + longRod.length < 19 && sidePoint > 0) {
+    if (stgNum + currentParts.length < 19 && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
   }
   const renderRight = () => {
-    if (stgNum + longRod.length < 19 && sidePoint < 9) {
+    if (stgNum + currentParts.length < 19 && sidePoint + currentParts[0].length < 10) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
   }
   const renderDown = () => {
-    if (stgNum + longRod.length < 19) setStgNum((stgNum) => ++stgNum)
+    if (stgNum + currentParts.length < 19) setStgNum((stgNum) => ++stgNum)
   }
   // prettier-ignore
-  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum])
+  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
   // prettier-ignore
-  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum])
+  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentParts])
   // prettier-ignore
-  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum])
+  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, currentParts])
   const [saveFld, setSaveFld] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -156,19 +160,16 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ]) //操作用（Operation）field
 
-  const isLanded = useMemo(() => {
-    return stgNum + currentParts.length < field.length
-  }, [stgNum, currentParts])
-
   const partsDown = useMemo(() => {
     const addField = new Array(20)
     for (let y = 0; y < 20; y++) {
       addField[y] = new Array(10).fill(0)
     }
     console.log(currentParts)
-    console.log(stgNum, sidePoint)
-    for (let n = 0; n < longRod.length; n++) {
-      addField[n + stgNum][sidePoint] = 1
+    for (let x = 0; x < currentParts.length; x++) {
+      for (let y = 0; y < currentParts[x].length; y++) {
+        if (currentParts[x][y] == 1) addField[x + stgNum][y + sidePoint] = 1
+      }
     }
     return addField
   }, [stgNum, sidePoint, currentParts])
@@ -178,7 +179,7 @@ const Home: NextPage = () => {
     const fieldData: number[] = partsDown.flat()
     const positionList = []
     const idxList = []
-    if (stgNum + longRod.length === 20) {
+    if (stgNum + currentParts.length === 20) {
       for (let i = 0; i < fieldData.length; i++) {
         if (fieldData[i] === 1) idxList.push(i)
       }
@@ -214,20 +215,13 @@ const Home: NextPage = () => {
     return fusionFld
   }, [stgNum, sidePoint, partsDown, saveFld, currentParts])
 
-  const nextParts = useMemo(() => {
-    let parts: number[][] = JSON.parse(JSON.stringify(currentParts))
-    if (isLanded) {
-      setPartsIdx((partsIdx) => ++partsIdx)
-      parts = hanger[partsIdx % hanger.length]
-      console.log(parts)
-    }
-    return parts
-  }, [stgNum])
-
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setStgNum((stgNum) => (stgNum + currentParts.length < field.length ? ++stgNum : 0)) // currentPartsが変わるとクリアできない
-      setCurrentParts(nextParts) // stgNumとかみ合わず、範囲外に描写する羽目になる
+      if (stgNum + currentParts.length === field.length) {
+        setPartsIdx((partsIdx) => ++partsIdx)
+        setCurrentParts(hanger[partsIdx % hanger.length]) // stgNumとかみ合わず、範囲外に描写する羽目になる
+      }
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
@@ -237,7 +231,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     setSaveFld(landingParts)
     setField(fieldFusion)
-  }, [stgNum, sidePoint])
+  }, [stgNum, sidePoint, currentParts])
 
   return (
     <Container>
