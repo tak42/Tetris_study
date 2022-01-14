@@ -62,6 +62,7 @@ const Home: NextPage = () => {
     [1, 1],
     [1, 1],
   ]
+  const hanger: number[][][] = [longRod, square]
   // prettier-ignore
   const [field, setField] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -86,32 +87,30 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ])
   const [timer, setTimer] = useState(0)
-  const [stageNumber, setstageNumber] = useState(0)
-  // const [currentParts, setCurrentParts] = useState([[0]])
+  const [stgNum, setStgNum] = useState(0)
+  const [currentParts, setCurrentParts] = useState(longRod)
+  const [partsIdx, setPartsIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [saveParts, setSaveParts] = useState([{}])
   const renderLeft = () => {
-    if (stageNumber + longRod.length < 19 && sidePoint > 0) {
+    if (stgNum + longRod.length < 19 && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
-    // console.log(sidePoint)
   }
   const renderRight = () => {
-    if (stageNumber + longRod.length < 19 && sidePoint < 9) {
+    if (stgNum + longRod.length < 19 && sidePoint < 9) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
-    // console.log(sidePoint)
   }
   const renderDown = () => {
-    if (stageNumber + longRod.length < 19) setstageNumber((stageNumber) => ++stageNumber)
-    // console.log(stageNumber)
+    if (stgNum + longRod.length < 19) setStgNum((stgNum) => ++stgNum)
   }
   // prettier-ignore
-  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stageNumber])
+  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum])
   // prettier-ignore
-  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stageNumber])
+  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum])
   // prettier-ignore
-  useKey('ArrowDown', () => { renderDown() }, {}, [stageNumber])
+  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum])
   const [saveFld, setSaveFld] = useState([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -157,25 +156,29 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ]) //操作用（Operation）field
 
+  const isLanded = useMemo(() => {
+    return stgNum + currentParts.length < field.length
+  }, [stgNum, currentParts])
+
   const partsDown = useMemo(() => {
-    // console.log(sidePoint)
     const addField = new Array(20)
     for (let y = 0; y < 20; y++) {
       addField[y] = new Array(10).fill(0)
     }
+    console.log(currentParts)
+    console.log(stgNum, sidePoint)
     for (let n = 0; n < longRod.length; n++) {
-      addField[n + stageNumber][sidePoint] = 1
+      addField[n + stgNum][sidePoint] = 1
     }
     return addField
-  }, [stageNumber, sidePoint])
+  }, [stgNum, sidePoint, currentParts])
 
   const landingParts = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    // console.log(newField)
     const fieldData: number[] = partsDown.flat()
     const positionList = []
     const idxList = []
-    if (stageNumber + longRod.length === 20) {
+    if (stgNum + longRod.length === 20) {
       for (let i = 0; i < fieldData.length; i++) {
         if (fieldData[i] === 1) idxList.push(i)
       }
@@ -196,7 +199,7 @@ const Home: NextPage = () => {
       })
     }
     return newField
-  }, [stageNumber, sidePoint, saveFld])
+  }, [stgNum, sidePoint, saveFld, currentParts])
 
   const fieldFusion = useMemo(() => {
     const fusionFld = new Array(20)
@@ -209,11 +212,22 @@ const Home: NextPage = () => {
       }
     }
     return fusionFld
-  }, [stageNumber, sidePoint, partsDown, saveFld])
+  }, [stgNum, sidePoint, partsDown, saveFld, currentParts])
+
+  const nextParts = useMemo(() => {
+    let parts: number[][] = JSON.parse(JSON.stringify(currentParts))
+    if (isLanded) {
+      setPartsIdx((partsIdx) => ++partsIdx)
+      parts = hanger[partsIdx % hanger.length]
+      console.log(parts)
+    }
+    return parts
+  }, [stgNum])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setstageNumber((stageNumber) => (stageNumber + longRod.length < 20 ? ++stageNumber : 0))
+      setStgNum((stgNum) => (stgNum + currentParts.length < field.length ? ++stgNum : 0)) // currentPartsが変わるとクリアできない
+      setCurrentParts(nextParts) // stgNumとかみ合わず、範囲外に描写する羽目になる
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
@@ -223,7 +237,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     setSaveFld(landingParts)
     setField(fieldFusion)
-  }, [stageNumber, sidePoint])
+  }, [stgNum, sidePoint])
 
   return (
     <Container>
