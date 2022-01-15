@@ -68,7 +68,7 @@ const Home: NextPage = () => {
   ]
   const hanger: number[][][] = [longRod, square, convex]
   // prettier-ignore
-  const [field, setField] = useState([
+  const baseField: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -89,7 +89,8 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ])
+  ]
+  const [field, setField] = useState(baseField)
   const [timer, setTimer] = useState(0)
   const [stgNum, setStgNum] = useState(0)
   const [currentParts, setCurrentParts] = useState(longRod)
@@ -115,57 +116,11 @@ const Home: NextPage = () => {
   useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentParts])
   // prettier-ignore
   useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, currentParts])
-  const [saveFld, setSaveFld] = useState([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]) // 保存用field
-  const [opeFld, setOpeFld] = useState([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]) //操作用（Operation）field
+  const [saveFld, setSaveFld] = useState(baseField) // 保存用field
+  const [opeFld, setOpeFld] = useState(baseField) //操作用（Operation）field
 
   const partsDown = useMemo(() => {
-    const addField = new Array(20)
-    for (let y = 0; y < 20; y++) {
-      addField[y] = new Array(10).fill(0)
-    }
-    console.log(currentParts)
+    const addField = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < currentParts.length; x++) {
       for (let y = 0; y < currentParts[x].length; y++) {
         if (currentParts[x][y] == 1) addField[x + stgNum][y + sidePoint] = 1
@@ -180,6 +135,7 @@ const Home: NextPage = () => {
     const positionList = []
     const idxList = []
     if (stgNum + currentParts.length === 20) {
+      // 着地判定
       for (let i = 0; i < fieldData.length; i++) {
         if (fieldData[i] === 1) idxList.push(i)
       }
@@ -191,22 +147,19 @@ const Home: NextPage = () => {
       for (const position of positionList) {
         newField[position.row][position.col] = 1
       }
-      newField.forEach((row: number[]) => {
-        if (row.every((val: number) => val === 1)) {
-          for (let i = 0; i < 10; i++) {
-            row[i] = 0
-          }
-        }
-      })
     }
+    newField.forEach((row: number[]) => {
+      if (row.every((val: number) => val === 1)) {
+        for (let i = 0; i < 10; i++) {
+          row[i] = 0
+        }
+      }
+    })
     return newField
   }, [stgNum, sidePoint, saveFld, currentParts])
 
   const fieldFusion = useMemo(() => {
-    const fusionFld = new Array(20)
-    for (let y = 0; y < 20; y++) {
-      fusionFld[y] = new Array(10).fill(0)
-    }
+    const fusionFld = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
         fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
@@ -217,10 +170,11 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => (stgNum + currentParts.length < field.length ? ++stgNum : 0)) // currentPartsが変わるとクリアできない
+      setStgNum((stgNum) => (stgNum + currentParts.length < field.length ? ++stgNum : 0))
       if (stgNum + currentParts.length === field.length) {
+        setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
-        setCurrentParts(hanger[partsIdx % hanger.length]) // stgNumとかみ合わず、範囲外に描写する羽目になる
+        console.log(partsIdx)
       }
     }, 1000)
     return () => {
