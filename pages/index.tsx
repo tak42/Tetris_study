@@ -119,7 +119,7 @@ const Home: NextPage = () => {
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
   const [opeFld, setOpeFld] = useState(baseField) //操作用（Operation）field
 
-  const partsDown = useMemo(() => {
+  const partsDown: number[][] = useMemo(() => {
     const addField = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < currentParts.length; x++) {
       for (let y = 0; y < currentParts[x].length; y++) {
@@ -129,24 +129,16 @@ const Home: NextPage = () => {
     return addField
   }, [stgNum, sidePoint, currentParts])
 
-  const landingParts = useMemo(() => {
+  const landingParts: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    const fieldData: number[] = partsDown.flat()
-    const positionList = []
-    const idxList = []
+    // 着地判定
     if (stgNum + currentParts.length === 20) {
-      // 着地判定
-      for (let i = 0; i < fieldData.length; i++) {
-        if (fieldData[i] === 1) idxList.push(i)
-      }
-      for (const elm of idxList) {
-        const exclusion = Math.floor(elm / 10)
-        const surplus = elm % 10
-        positionList.push({ row: exclusion, col: surplus })
-      }
-      for (const position of positionList) {
-        newField[position.row][position.col] = 1
-      }
+      // prettier-ignore
+      partsDown.flat().map((elm, idx) => {
+        return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
+      }).filter((elm) => elm.row >= 0).forEach((elm) => {
+        newField[elm.row][elm.col] = 1
+      })
     }
     newField.forEach((row: number[]) => {
       if (row.every((val: number) => val === 1)) {
@@ -174,7 +166,6 @@ const Home: NextPage = () => {
       if (stgNum + currentParts.length === field.length) {
         setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
-        console.log(partsIdx)
       }
     }, 1000)
     return () => {
