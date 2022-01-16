@@ -91,12 +91,10 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ]
   const [field, setField] = useState(baseField)
-  const [timer, setTimer] = useState(0)
   const [stgNum, setStgNum] = useState(0)
   const [currentParts, setCurrentParts] = useState(longRod)
   const [partsIdx, setPartsIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
-  const [saveParts, setSaveParts] = useState([{}])
   const renderLeft = () => {
     if (stgNum + currentParts.length < 19 && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
@@ -117,7 +115,6 @@ const Home: NextPage = () => {
   // prettier-ignore
   useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, currentParts])
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
-  const [opeFld, setOpeFld] = useState(baseField) //操作用（Operation）field
 
   const partsDown: number[][] = useMemo(() => {
     const addField = JSON.parse(JSON.stringify(baseField))
@@ -129,10 +126,16 @@ const Home: NextPage = () => {
     return addField
   }, [stgNum, sidePoint, currentParts])
 
+  const isLanded: boolean = useMemo(() => {
+    return (
+      stgNum + currentParts.length === 20 || saveFld[stgNum + currentParts.length][sidePoint] === 1
+    )
+  }, [saveFld, stgNum, currentParts, sidePoint])
+
   const landingParts: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
     // 着地判定
-    if (stgNum + currentParts.length === 20) {
+    if (isLanded) {
       partsDown
         .flat()
         .map((elm, idx) => {
@@ -148,7 +151,6 @@ const Home: NextPage = () => {
     })
     const unshiftCnt = baseField.length - rtnField.length
     for (let i = 0; i < unshiftCnt; i++) {
-      console.log(rtnField.length)
       rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     return rtnField
@@ -166,8 +168,9 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => (stgNum + currentParts.length < field.length ? ++stgNum : 0))
-      if (stgNum + currentParts.length === field.length) {
+      setStgNum((stgNum) => (isLanded ? 0 : ++stgNum))
+      if (isLanded) {
+        setSidePoint(4)
         setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
       }
