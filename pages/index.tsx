@@ -133,22 +133,26 @@ const Home: NextPage = () => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
     // 着地判定
     if (stgNum + currentParts.length === 20) {
-      // prettier-ignore
-      partsDown.flat().map((elm, idx) => {
-        return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
-      }).filter((elm) => elm.row >= 0).forEach((elm) => {
-        newField[elm.row][elm.col] = 1
-      })
+      partsDown
+        .flat()
+        .map((elm, idx) => {
+          return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
+        })
+        .filter((elm) => elm.row >= 0)
+        .forEach((elm) => {
+          newField[elm.row][elm.col] = 1
+        })
     }
-    newField.forEach((row: number[]) => {
-      if (row.every((val: number) => val === 1)) {
-        for (let i = 0; i < 10; i++) {
-          row[i] = 0
-        }
-      }
+    const rtnField: number[][] = newField.filter((row: number[]) => {
+      return !row.every((val: number) => val === 1)
     })
-    return newField
-  }, [stgNum, sidePoint, saveFld, currentParts])
+    const unshiftCnt = baseField.length - rtnField.length
+    for (let i = 0; i < unshiftCnt; i++) {
+      console.log(rtnField.length)
+      rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    }
+    return rtnField
+  }, [stgNum, sidePoint, currentParts])
 
   const fieldFusion = useMemo(() => {
     const fusionFld = JSON.parse(JSON.stringify(baseField))
