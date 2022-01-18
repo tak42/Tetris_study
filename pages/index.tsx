@@ -127,9 +127,12 @@ const Home: NextPage = () => {
   }, [stgNum, sidePoint, currentParts])
 
   const isLanded: boolean = useMemo(() => {
-    return (
-      stgNum + currentParts.length === 20 || saveFld[stgNum + currentParts.length][sidePoint] === 1
-    )
+    let partLanded = false
+    for (let i = 0; i < currentParts[0].length; i++) {
+      console.log(sidePoint + i, stgNum + currentParts.length)
+      partLanded = saveFld[stgNum + currentParts.length][sidePoint + i] === 1
+    }
+    return stgNum + currentParts.length === 20 || partLanded
   }, [saveFld, stgNum, currentParts, sidePoint])
 
   const landingParts: number[][] = useMemo(() => {
