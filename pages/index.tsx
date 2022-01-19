@@ -92,21 +92,27 @@ const Home: NextPage = () => {
   ]
   const [field, setField] = useState(baseField)
   const [stgNum, setStgNum] = useState(0)
+  const [timer, setTimer] = useState(0)
   const [currentParts, setCurrentParts] = useState(longRod)
   const [partsIdx, setPartsIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const renderLeft = () => {
-    if (!isContact(stgNum, sidePoint, currentParts) && sidePoint > 0) {
+    if (!isContact(stgNum, sidePoint - 1, currentParts) && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
   }
   const renderRight = () => {
-    if (!isContact(stgNum, sidePoint, currentParts) && sidePoint + currentParts[0].length < 10) {
+    if (
+      !isContact(stgNum, sidePoint + 1, currentParts) &&
+      sidePoint + currentParts[0].length < 10
+    ) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
   }
   const renderDown = () => {
-    if (!isContact(stgNum, sidePoint, currentParts)) setStgNum((stgNum) => ++stgNum)
+    if (!isContact(stgNum, sidePoint, currentParts) && stgNum + currentParts.length < 20) {
+      setStgNum((stgNum) => ++stgNum)
+    }
   }
   // prettier-ignore
   useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
@@ -117,20 +123,25 @@ const Home: NextPage = () => {
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
 
   const isContact = (x: number, y: number, parts: number[][]) => {
-    let isPartContact = false
+    const isPartContact: boolean[] = []
     if (x + parts.length < 20) {
+      for (let i = 0; i < parts.length; i++) {
+        for (let l = 0; l < parts[0].length; l++) {
+          isPartContact.push(saveFld[x + i][y + l] === 1)
+        }
+      }
       for (let i = 0; i < parts[0].length; i++) {
-        isPartContact = saveFld[x + parts.length][y + i] === 1
+        isPartContact.push(saveFld[x + parts.length][y + i] === 1)
       }
     }
-    return x + parts.length === 20 || isPartContact
+    return x + parts.length === 20 || isPartContact.includes(true)
   }
 
   const partsDown: number[][] = useMemo(() => {
     const addField = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < currentParts.length; x++) {
       for (let y = 0; y < currentParts[x].length; y++) {
-        if (currentParts[x][y] == 1) addField[x + stgNum][y + sidePoint] = 1
+        if (currentParts[x][y] === 1) addField[x + stgNum][y + sidePoint] = 1
       }
     }
     return addField
@@ -172,12 +183,8 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => (isContact(stgNum, sidePoint, currentParts) ? 0 : ++stgNum))
-      if (isContact(stgNum, sidePoint, currentParts)) {
-        setSidePoint(4)
-        setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
-        setPartsIdx((partsIdx) => ++partsIdx)
-      }
+      // setTimer((timer) => ++timer)
+      setStgNum((stgNum) => ++stgNum)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
@@ -185,6 +192,12 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
+    if (isContact(stgNum, sidePoint, currentParts)) {
+      setStgNum(0)
+      setSidePoint(4)
+      setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
+      setPartsIdx((partsIdx) => ++partsIdx)
+    }
     setSaveFld(landingParts)
     setField(fieldFusion)
   }, [stgNum, sidePoint, currentParts])
