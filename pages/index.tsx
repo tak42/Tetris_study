@@ -96,25 +96,35 @@ const Home: NextPage = () => {
   const [partsIdx, setPartsIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const renderLeft = () => {
-    if (stgNum + currentParts.length < 19 && sidePoint > 0) {
+    if (!isContact(stgNum, sidePoint, currentParts) && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
   }
   const renderRight = () => {
-    if (stgNum + currentParts.length < 19 && sidePoint + currentParts[0].length < 10) {
+    if (!isContact(stgNum, sidePoint, currentParts) && sidePoint + currentParts[0].length < 10) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
   }
   const renderDown = () => {
-    if (stgNum + currentParts.length < 19) setStgNum((stgNum) => ++stgNum)
+    if (!isContact(stgNum, sidePoint, currentParts)) setStgNum((stgNum) => ++stgNum)
   }
   // prettier-ignore
   useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
   // prettier-ignore
   useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentParts])
   // prettier-ignore
-  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, currentParts])
+  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentParts])
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
+
+  const isContact = (x: number, y: number, parts: number[][]) => {
+    let isPartContact = false
+    if (x + parts.length < 20) {
+      for (let i = 0; i < parts[0].length; i++) {
+        isPartContact = saveFld[x + parts.length][y + i] === 1
+      }
+    }
+    return x + parts.length === 20 || isPartContact
+  }
 
   const partsDown: number[][] = useMemo(() => {
     const addField = JSON.parse(JSON.stringify(baseField))
@@ -126,19 +136,10 @@ const Home: NextPage = () => {
     return addField
   }, [stgNum, sidePoint, currentParts])
 
-  const isLanded: boolean = useMemo(() => {
-    let partLanded = false
-    for (let i = 0; i < currentParts[0].length; i++) {
-      console.log(sidePoint + i, stgNum + currentParts.length)
-      partLanded = saveFld[stgNum + currentParts.length][sidePoint + i] === 1
-    }
-    return stgNum + currentParts.length === 20 || partLanded
-  }, [saveFld, stgNum, currentParts, sidePoint])
-
   const landingParts: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
     // 着地判定
-    if (isLanded) {
+    if (isContact(stgNum, sidePoint, currentParts)) {
       partsDown
         .flat()
         .map((elm, idx) => {
@@ -171,8 +172,8 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => (isLanded ? 0 : ++stgNum))
-      if (isLanded) {
+      setStgNum((stgNum) => (isContact(stgNum, sidePoint, currentParts) ? 0 : ++stgNum))
+      if (isContact(stgNum, sidePoint, currentParts)) {
         setSidePoint(4)
         setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
@@ -187,6 +188,14 @@ const Home: NextPage = () => {
     setSaveFld(landingParts)
     setField(fieldFusion)
   }, [stgNum, sidePoint, currentParts])
+
+  // const onClick = (x: number, y: number) => {
+  //   const newBoard: number[][] = JSON.parse(JSON.stringify(board)) // boardを直接書き換えないようにコピー作成
+  //   // prettier-ignore
+  //   const directions: number[][] = [
+  //     [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1]
+  //   ]
+  // }
 
   return (
     <Container>
