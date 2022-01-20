@@ -51,13 +51,7 @@ const Home: NextPage = () => {
   // 3.１行うまったらクリアされる
   // 4.クリア行より上の行は１段さがる
   // 5.最上段より上にブロックが来たら負け
-  // prettier-ignore
-  const longRod: number[][] = [
-    [1],
-    [1],
-    [1],
-    [1]
-  ]
+  const longRod: number[][] = [[1], [1], [1], [1]]
   const square: number[][] = [
     [1, 1],
     [1, 1],
@@ -66,7 +60,12 @@ const Home: NextPage = () => {
     [0, 1, 0],
     [1, 1, 1],
   ]
-  const hanger: number[][][] = [longRod, square, convex]
+  const lshaped: number[][] = [
+    [1, 0],
+    [1, 0],
+    [1, 1],
+  ]
+  const hanger: number[][][] = [longRod, square, convex, lshaped]
   // prettier-ignore
   const baseField: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -118,7 +117,10 @@ const Home: NextPage = () => {
     // 一回回転させるとどういう形になるか試す
     const tryRotatedParts: number[][] = tryRotaingParts(stgNum, sidePoint, currentParts, rotation)
     // 接触するかどうかを確認
+    const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedParts)
     // 接触していなければ本物を回転させる
+    console.log(tryIsContact)
+    if (!tryIsContact) setCurrentParts(tryRotatedParts)
   }
   // prettier-ignore
   useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
@@ -150,16 +152,17 @@ const Home: NextPage = () => {
   const tryRotaingParts = (x: number, y: number, parts: number[][], rotation: number) => {
     // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
     const tryRotation = rotation === 3 ? 0 : rotation + 1
-    const rotatedParts: number[][] = JSON.parse(JSON.stringify(parts))
+    let rotatedParts: number[][] = JSON.parse(JSON.stringify(parts))
     if (tryRotation === 1) {
       const newX = parts[0].length
       const newY = parts.length
       const newParts = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
-      console.log(newParts)
-      // for (let i = 0; i < newX; i++) {
-      //   for (let l = 0; l < newY; l++) {
-      //   }
-      // }
+      for (let i = 0; i < newX; i++) {
+        for (let l = 0; l < newY; l++) {
+          newParts[i][l] = parts[newY - l - 1][i]
+        }
+      }
+      rotatedParts = newParts
     }
     return rotatedParts
   }
