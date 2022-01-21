@@ -120,7 +120,10 @@ const Home: NextPage = () => {
     const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedParts)
     // 接触していなければ本物を回転させる
     console.log(tryIsContact)
-    if (!tryIsContact) setCurrentParts(tryRotatedParts)
+    if (!tryIsContact) {
+      setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
+      setCurrentParts(tryRotatedParts)
+    }
   }
   // prettier-ignore
   useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
@@ -211,23 +214,37 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => ++stgNum)
+      if (
+        saveFld.filter((row) => {
+          return row.includes(1)
+        }).length > 19
+      ) {
+        // clearTimeout(timeoutId)
+      } else {
+        setStgNum((stgNum) => ++stgNum)
+      }
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
     }
-  })
+  }, [saveFld])
 
   useEffect(() => {
-    if (isContact(stgNum, sidePoint, currentParts)) {
-      setStgNum(0)
-      setRotation(0)
-      setSidePoint(4)
-      setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
-      setPartsIdx((partsIdx) => ++partsIdx)
+    if (
+      saveFld.filter((row) => {
+        return row.includes(1)
+      }).length < 20
+    ) {
+      if (isContact(stgNum, sidePoint, currentParts)) {
+        setStgNum(0)
+        setRotation(0)
+        setSidePoint(4)
+        setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
+        setPartsIdx((partsIdx) => ++partsIdx)
+      }
+      setSaveFld(landingParts)
+      setField(fieldFusion)
     }
-    setSaveFld(landingParts)
-    setField(fieldFusion)
   }, [stgNum, sidePoint, currentParts])
 
   return (
