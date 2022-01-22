@@ -14,7 +14,9 @@ const Container = styled.div`
   padding: 0 0.5rem;
   background-color: black;
 `
-
+const Header = styled.div`
+  margin-bottom: 1rem;
+`
 const Main = styled.main`
   display: flex;
   flex: 1;
@@ -51,21 +53,34 @@ const Home: NextPage = () => {
   // 3.１行うまったらクリアされる
   // 4.クリア行より上の行は１段さがる
   // 5.最上段より上にブロックが来たら負け
-  const longRod: number[][] = [[1], [1], [1], [1]]
-  const square: number[][] = [
+  const block_i: number[][] = [[1], [1], [1], [1]]
+  const block_o: number[][] = [
     [1, 1],
     [1, 1],
   ]
-  const convex: number[][] = [
+  const block_t: number[][] = [
     [0, 1, 0],
     [1, 1, 1],
   ]
-  const lshaped: number[][] = [
+  const block_l: number[][] = [
     [1, 0],
     [1, 0],
     [1, 1],
   ]
-  const hanger: number[][][] = [longRod, square, convex, lshaped]
+  const block_j: number[][] = [
+    [0, 1],
+    [0, 1],
+    [1, 1],
+  ]
+  const block_s: number[][] = [
+    [0, 1, 1],
+    [1, 1, 0],
+  ]
+  const block_z: number[][] = [
+    [1, 1, 0],
+    [0, 1, 1],
+  ]
+  const hanger: number[][][] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
   // prettier-ignore
   const baseField: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -91,7 +106,7 @@ const Home: NextPage = () => {
   ]
   const [field, setField] = useState(baseField)
   const [stgNum, setStgNum] = useState(0)
-  const [currentParts, setCurrentParts] = useState(longRod)
+  const [currentParts, setCurrentParts] = useState(hanger[0])
   const [partsIdx, setPartsIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
@@ -138,14 +153,17 @@ const Home: NextPage = () => {
   // 最下層または、他のブロックと接触しているかどうか
   const isContact = (x: number, y: number, parts: number[][]) => {
     const isPartContact: boolean[] = []
-    if (x + parts.length < 20) {
-      for (let i = 0; i < parts.length; i++) {
+    if (x + parts.length < 20 && y >= 0) {
+      for (let i = 1; i < parts.length; i++) {
         for (let l = 0; l < parts[0].length; l++) {
-          isPartContact.push(saveFld[x + i][y + l] === 1)
+          isPartContact.push(parts[i][l] === 1 && saveFld[x + i][y + l] === 1)
         }
       }
+      console.log(x + parts.length - 1)
       for (let i = 0; i < parts[0].length; i++) {
-        isPartContact.push(saveFld[x + parts.length][y + i] === 1)
+        isPartContact.push(
+          parts[parts.length - 1][i] === 1 && saveFld[x + parts.length][y + i] === 1
+        )
       }
     }
     return x + parts.length === 20 || isPartContact.includes(true)
@@ -247,6 +265,10 @@ const Home: NextPage = () => {
     }
   }, [stgNum, sidePoint, currentParts])
 
+  const onClick = () => {
+    setSaveFld(baseField)
+  }
+
   return (
     <Container>
       <Head>
@@ -255,11 +277,14 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Main>
+        <Header>
+          <button onClick={() => onClick()}>リセット</button>
+        </Header>
         <Grid>
           {field.map((row, x) =>
             row.map((col, y) => (
               <Area key={`${x}-${y}`} val={field[x][y]}>
-                {x}, {y}
+                {/* {x}, {y} */}
               </Area>
             ))
           )}
