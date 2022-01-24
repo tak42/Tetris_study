@@ -199,7 +199,7 @@ const Home: NextPage = () => {
 
   const landingParts: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    if (isContact(stgNum, sidePoint, currentParts)) {
+    if (!isContact(stgNum, sidePoint, currentParts)) {
       partsDown
         .flat()
         .map((elm, idx) => {
@@ -224,7 +224,8 @@ const Home: NextPage = () => {
     const fusionFld = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
-        fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
+        // fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
+        fusionFld[x][y] = landingParts[x][y]
       }
     }
     return fusionFld
@@ -253,6 +254,7 @@ const Home: NextPage = () => {
         return row.includes(1)
       }).length < 20
     ) {
+      console.log(stgNum)
       if (isContact(stgNum, sidePoint, currentParts)) {
         setStgNum(0)
         setRotation(0)
@@ -260,7 +262,7 @@ const Home: NextPage = () => {
         setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
       }
-      setSaveFld(landingParts)
+      // setSaveFld(landingParts)
       setField(fieldFusion)
     }
   }, [stgNum, sidePoint, currentParts])
