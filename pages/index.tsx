@@ -159,7 +159,6 @@ const Home: NextPage = () => {
           isPartContact.push(parts[i][l] === 1 && saveFld[x + i][y + l] === 1)
         }
       }
-      console.log(x + parts.length - 1)
       for (let i = 0; i < parts[0].length; i++) {
         isPartContact.push(
           parts[parts.length - 1][i] === 1 && saveFld[x + parts.length][y + i] === 1
@@ -224,8 +223,8 @@ const Home: NextPage = () => {
     const fusionFld = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
-        // fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
-        fusionFld[x][y] = landingParts[x][y]
+        fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
+        // fusionFld[x][y] = saveFld[x][y]
       }
     }
     return fusionFld
@@ -233,37 +232,33 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (
-        saveFld.filter((row) => {
-          return row.includes(1)
-        }).length > 19
-      ) {
-        // clearTimeout(timeoutId)
-      } else {
+      // prettier-ignore
+      if (saveFld.filter((row) => { return row.includes(1) }).length < 20) {
         setStgNum((stgNum) => ++stgNum)
       }
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
     }
-  }, [saveFld])
+  })
 
   useEffect(() => {
-    if (
-      saveFld.filter((row) => {
-        return row.includes(1)
-      }).length < 20
-    ) {
-      console.log(stgNum)
+    // prettier-ignore
+    if (saveFld.filter((row) => { return row.includes(1) }).length < 20) {
       if (isContact(stgNum, sidePoint, currentParts)) {
+        console.log(landingParts)
+        setSaveFld(landingParts)
+        // console.log(fieldFusion)
         setStgNum(0)
         setRotation(0)
         setSidePoint(4)
         setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
         setPartsIdx((partsIdx) => ++partsIdx)
+      } else {
+        // setField(partsDown)
       }
-      // setSaveFld(landingParts)
       setField(fieldFusion)
+      // setField(fieldFusion)
     }
   }, [stgNum, sidePoint, currentParts])
 
