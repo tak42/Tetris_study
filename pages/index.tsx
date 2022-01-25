@@ -105,109 +105,124 @@ const Home: NextPage = () => {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   ]
   const [field, setField] = useState(baseField)
+  const [saveFld, setSaveFld] = useState(baseField) // 保存用field
   const [stgNum, setStgNum] = useState(0)
-  const [currentParts, setCurrentParts] = useState(hanger[0])
-  const [partsIdx, setPartsIdx] = useState(0)
+  const [currentBlock, setCurrentBlock] = useState(hanger[0])
+  const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
   const renderLeft = () => {
-    if (!isContact(stgNum, sidePoint - 1, currentParts) && sidePoint > 0) {
+    if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
       setSidePoint((sidePoint) => --sidePoint)
     }
   }
   const renderRight = () => {
     if (
-      !isContact(stgNum, sidePoint + 1, currentParts) &&
-      sidePoint + currentParts[0].length < 10
+      !isContact(stgNum, sidePoint + 1, currentBlock) &&
+      sidePoint + currentBlock[0].length < 10
     ) {
       setSidePoint((sidePoint) => ++sidePoint)
     }
   }
   const renderDown = () => {
-    if (!isContact(stgNum, sidePoint, currentParts) && stgNum + currentParts.length < 20) {
+    if (!isContact(stgNum, sidePoint, currentBlock) && stgNum + currentBlock.length < 20) {
       setStgNum((stgNum) => ++stgNum)
     }
   }
   const renderUp = () => {
     // 一回回転させるとどういう形になるか試す
-    const tryRotatedParts: number[][] = tryRotaingParts(stgNum, sidePoint, currentParts, rotation)
+    const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
     // 接触するかどうかを確認
-    const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedParts)
+    const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
     // 接触していなければ本物を回転させる
     console.log(tryIsContact)
     if (!tryIsContact) {
       setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
-      setCurrentParts(tryRotatedParts)
+      setCurrentBlock(tryRotatedBlock)
     }
   }
   // prettier-ignore
-  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentParts])
+  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentBlock])
   // prettier-ignore
-  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentParts])
+  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentBlock])
   // prettier-ignore
-  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentParts])
+  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentBlock])
   // prettier-ignore
-  useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentParts])
-  const [saveFld, setSaveFld] = useState(baseField) // 保存用field
+  useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
 
   // 最下層または、他のブロックと接触しているかどうか
-  const isContact = (x: number, y: number, parts: number[][]) => {
+  const isContact = (x: number, y: number, block: number[][]) => {
     const isPartContact: boolean[] = []
-    if (x + parts.length < 20 && y >= 0) {
-      for (let i = 1; i < parts.length; i++) {
-        for (let l = 0; l < parts[0].length; l++) {
-          isPartContact.push(parts[i][l] === 1 && saveFld[x + i][y + l] === 1)
+    if (x + block.length < 20 && y >= 0) {
+      for (let i = 0; i < block.length; i++) {
+        for (let l = 0; l < block[0].length; l++) {
+          if (saveFld[x + i][y + l] === 1) console.log(i, l, x + i, y + l)
+          isPartContact.push(saveFld[x + i][y + l] === 1)
         }
       }
-      for (let i = 0; i < parts[0].length; i++) {
+      for (let i = 0; i < block[0].length; i++) {
         isPartContact.push(
-          parts[parts.length - 1][i] === 1 && saveFld[x + parts.length][y + i] === 1
+          block[block.length - 1][i] === 1 && saveFld[x + block.length][y + i] === 1
         )
       }
     }
-    return x + parts.length === 20 || isPartContact.includes(true)
+    return x + block.length === 20 || isPartContact.includes(true)
   }
 
   // 試しに回転したときの形を返す
-  const tryRotaingParts = (x: number, y: number, parts: number[][], rotation: number) => {
+  const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
     // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
     const tryRotation = rotation === 3 ? 0 : rotation + 1
-    let rotatedParts: number[][] = JSON.parse(JSON.stringify(parts))
+    let rotatedBlock: number[][] = JSON.parse(JSON.stringify(block))
     if (tryRotation === 1) {
-      const newX = parts[0].length
-      const newY = parts.length
-      const newParts = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
+      const newX = block[0].length
+      const newY = block.length
+      const newBlock = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
       for (let i = 0; i < newX; i++) {
         for (let l = 0; l < newY; l++) {
-          newParts[i][l] = parts[newY - l - 1][i]
+          newBlock[i][l] = block[newY - l - 1][i]
         }
       }
-      rotatedParts = newParts
+      rotatedBlock = newBlock
     }
-    return rotatedParts
+    return rotatedBlock
   }
-  const partsDown: number[][] = useMemo(() => {
+  const blockDown: number[][] = useMemo(() => {
     const addField = JSON.parse(JSON.stringify(baseField))
-    for (let x = 0; x < currentParts.length; x++) {
-      for (let y = 0; y < currentParts[x].length; y++) {
-        if (currentParts[x][y] === 1) addField[x + stgNum][y + sidePoint] = 1
+    for (let x = 0; x < currentBlock.length; x++) {
+      for (let y = 0; y < currentBlock[x].length; y++) {
+        if (currentBlock[x][y] === 1) addField[x + stgNum][y + sidePoint] = 1
       }
     }
     return addField
-  }, [stgNum, sidePoint, currentParts])
+  }, [stgNum, sidePoint, currentBlock])
 
-  const landingParts: number[][] = useMemo(() => {
+  const landingBlock: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    if (!isContact(stgNum, sidePoint, currentParts)) {
-      partsDown
-        .flat()
-        .map((elm, idx) => {
-          return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
-        })
-        .filter((elm) => elm.row >= 0)
-        .forEach((elm) => {
-          newField[elm.row][elm.col] = 1
-        })
+    const isPartContact: boolean[] = []
+    if (stgNum + currentBlock.length < 20 && sidePoint >= 0) {
+      for (let i = 0; i < currentBlock.length; i++) {
+        for (let l = 0; l < currentBlock[0].length; l++) {
+          if (saveFld[stgNum + i][sidePoint + l] === 1) console.log(i, l, stgNum + i, sidePoint + l)
+          isPartContact.push(saveFld[stgNum + i][sidePoint + l] === 1)
+        }
+      }
+      for (let i = 0; i < currentBlock[0].length; i++) {
+        isPartContact.push(
+          currentBlock[currentBlock.length - 1][i] === 1 &&
+            saveFld[stgNum + currentBlock.length][sidePoint + i] === 1
+        )
+      }
+    }
+    console.log(stgNum + currentBlock.length === 20 || isPartContact.includes(true))
+    if (stgNum + currentBlock.length === 20 || isPartContact.includes(true)) {
+      console.log(stgNum, sidePoint)
+      // prettier-ignore
+      blockDown.flat().map((elm, idx) => {
+        return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
+      }).filter((elm) => elm.row >= 0).forEach((elm) => {
+        newField[elm.row][elm.col] = 1
+      })
     }
     const rtnField: number[][] = newField.filter((row: number[]) => {
       return !row.every((val: number) => val === 1)
@@ -217,25 +232,21 @@ const Home: NextPage = () => {
       rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
     return rtnField
-  }, [stgNum, sidePoint, currentParts])
+  }, [stgNum, sidePoint, currentBlock])
 
   const fieldFusion = useMemo(() => {
     const fusionFld = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
-        fusionFld[x][y] = partsDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
-        // fusionFld[x][y] = saveFld[x][y]
+        fusionFld[x][y] = blockDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
       }
     }
     return fusionFld
-  }, [stgNum, sidePoint, partsDown, saveFld, currentParts])
+  }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      // prettier-ignore
-      if (saveFld.filter((row) => { return row.includes(1) }).length < 20) {
-        setStgNum((stgNum) => ++stgNum)
-      }
+      setStgNum((stgNum) => ++stgNum)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
@@ -245,25 +256,21 @@ const Home: NextPage = () => {
   useEffect(() => {
     // prettier-ignore
     if (saveFld.filter((row) => { return row.includes(1) }).length < 20) {
-      if (isContact(stgNum, sidePoint, currentParts)) {
-        console.log(landingParts)
-        setSaveFld(landingParts)
-        // console.log(fieldFusion)
+      setSaveFld(landingBlock)
+      setField(fieldFusion)
+      if (isContact(stgNum, sidePoint, currentBlock)) {
         setStgNum(0)
         setRotation(0)
         setSidePoint(4)
-        setCurrentParts(hanger[(partsIdx + 1) % hanger.length])
-        setPartsIdx((partsIdx) => ++partsIdx)
-      } else {
-        // setField(partsDown)
+        setCurrentBlock(hanger[(blockIdx + 1) % hanger.length])
+        setBlockIdx((blockIdx) => ++blockIdx)
       }
-      setField(fieldFusion)
-      // setField(fieldFusion)
     }
-  }, [stgNum, sidePoint, currentParts])
+  }, [stgNum, sidePoint, currentBlock])
 
   const onClick = () => {
     setSaveFld(baseField)
+    setField(baseField)
   }
 
   return (
@@ -281,7 +288,7 @@ const Home: NextPage = () => {
           {field.map((row, x) =>
             row.map((col, y) => (
               <Area key={`${x}-${y}`} val={field[x][y]}>
-                {/* {x}, {y} */}
+                {x}, {y}
               </Area>
             ))
           )}
