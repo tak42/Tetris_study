@@ -39,11 +39,11 @@ const Grid = styled.div`
     width: 100%;
   }
 `
-const Area = styled.div<{ val: number }>`
+const Area = styled.div<{ val: number; color: string }>`
   width: 50px;
   height: 50px;
   border: 1px solid black;
-  background-color: ${(props) => (props.val === 1 ? 'lightBlue' : 'gray')};
+  background-color: ${(props) => (props.val === 1 ? props.color : 'gray')};
 `
 
 const Home: NextPage = () => {
@@ -81,6 +81,7 @@ const Home: NextPage = () => {
     [0, 1, 1],
   ]
   const hanger: number[][][] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
+  const blockColors: string[] = ['lightBlue', 'yellow', 'purple', 'orange', 'blue', 'green', 'red']
   // prettier-ignore
   const baseField: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -135,7 +136,6 @@ const Home: NextPage = () => {
     // 接触するかどうかを確認
     const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
     // 接触していなければ本物を回転させる
-    console.log(tryIsContact)
     if (!tryIsContact) {
       setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
       setCurrentBlock(tryRotatedBlock)
@@ -154,10 +154,11 @@ const Home: NextPage = () => {
   const isContact = (x: number, y: number, block: number[][]) => {
     const isPartContact: boolean[] = []
     if (x + block.length < 20 && y >= 0) {
-      for (let i = 0; i < block.length; i++) {
-        for (let l = 0; l < block[0].length; l++) {
-          if (saveFld[x + i][y + l] === 1) console.log(i, l, x + i, y + l)
-          isPartContact.push(saveFld[x + i][y + l] === 1)
+      for (let i = 1; i <= currentBlock.length; i++) {
+        for (let l = 0; l < currentBlock[0].length; l++) {
+          isPartContact.push(
+            currentBlock[i - 1][l] === 1 && saveFld[stgNum + i][sidePoint + l] === 1
+          )
         }
       }
       for (let i = 0; i < block[0].length; i++) {
@@ -166,7 +167,7 @@ const Home: NextPage = () => {
         )
       }
     }
-    return x + block.length === 20 || isPartContact.includes(true)
+    return x + block.length === 20 || y + block[0].length > 10 || isPartContact.includes(true)
   }
 
   // 試しに回転したときの形を返す
@@ -201,10 +202,11 @@ const Home: NextPage = () => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
     const isPartContact: boolean[] = []
     if (stgNum + currentBlock.length < 20 && sidePoint >= 0) {
-      for (let i = 0; i < currentBlock.length; i++) {
+      for (let i = 1; i <= currentBlock.length; i++) {
         for (let l = 0; l < currentBlock[0].length; l++) {
-          if (saveFld[stgNum + i][sidePoint + l] === 1) console.log(i, l, stgNum + i, sidePoint + l)
-          isPartContact.push(saveFld[stgNum + i][sidePoint + l] === 1)
+          isPartContact.push(
+            currentBlock[i - 1][l] === 1 && saveFld[stgNum + i][sidePoint + l] === 1
+          )
         }
       }
       for (let i = 0; i < currentBlock[0].length; i++) {
@@ -214,9 +216,7 @@ const Home: NextPage = () => {
         )
       }
     }
-    console.log(stgNum + currentBlock.length === 20 || isPartContact.includes(true))
     if (stgNum + currentBlock.length === 20 || isPartContact.includes(true)) {
-      console.log(stgNum, sidePoint)
       // prettier-ignore
       blockDown.flat().map((elm, idx) => {
         return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
@@ -287,8 +287,12 @@ const Home: NextPage = () => {
         <Grid>
           {field.map((row, x) =>
             row.map((col, y) => (
-              <Area key={`${x}-${y}`} val={field[x][y]}>
-                {x}, {y}
+              <Area
+                key={`${x}-${y}`}
+                val={field[x][y]}
+                color={blockColors[blockIdx % hanger.length]}
+              >
+                {/* {x}, {y} */}
               </Area>
             ))
           )}
