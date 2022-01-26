@@ -39,11 +39,11 @@ const Grid = styled.div`
     width: 100%;
   }
 `
-const Area = styled.div<{ val: number; color: string }>`
+const Area = styled.div<{ color: string }>`
   width: 50px;
   height: 50px;
   border: 1px solid black;
-  background-color: ${(props) => (props.val === 1 ? props.color : 'gray')};
+  background-color: ${(props) => props.color};
 `
 
 const Home: NextPage = () => {
@@ -55,33 +55,42 @@ const Home: NextPage = () => {
   // 5.最上段より上にブロックが来たら負け
   const block_i: number[][] = [[1], [1], [1], [1]]
   const block_o: number[][] = [
-    [1, 1],
-    [1, 1],
+    [2, 2],
+    [2, 2],
   ]
   const block_t: number[][] = [
-    [0, 1, 0],
-    [1, 1, 1],
+    [0, 3, 0],
+    [3, 3, 3],
   ]
   const block_l: number[][] = [
-    [1, 0],
-    [1, 0],
-    [1, 1],
+    [4, 0],
+    [4, 0],
+    [4, 4],
   ]
   const block_j: number[][] = [
-    [0, 1],
-    [0, 1],
-    [1, 1],
+    [0, 5],
+    [0, 5],
+    [5, 5],
   ]
   const block_s: number[][] = [
-    [0, 1, 1],
-    [1, 1, 0],
+    [0, 6, 6],
+    [6, 6, 0],
   ]
   const block_z: number[][] = [
-    [1, 1, 0],
-    [0, 1, 1],
+    [7, 7, 0],
+    [0, 7, 7],
   ]
   const hanger: number[][][] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
-  const blockColors: string[] = ['lightBlue', 'yellow', 'purple', 'orange', 'blue', 'green', 'red']
+  const blockColors: string[] = [
+    'gray',
+    'lightBlue',
+    'yellow',
+    'purple',
+    'orange',
+    'blue',
+    'green',
+    'red',
+  ]
   // prettier-ignore
   const baseField: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -156,15 +165,11 @@ const Home: NextPage = () => {
     if (x + block.length < 20 && y >= 0) {
       for (let i = 1; i <= currentBlock.length; i++) {
         for (let l = 0; l < currentBlock[0].length; l++) {
-          isPartContact.push(
-            currentBlock[i - 1][l] === 1 && saveFld[stgNum + i][sidePoint + l] === 1
-          )
+          isPartContact.push(currentBlock[i - 1][l] > 0 && saveFld[stgNum + i][sidePoint + l] > 0)
         }
       }
       for (let i = 0; i < block[0].length; i++) {
-        isPartContact.push(
-          block[block.length - 1][i] === 1 && saveFld[x + block.length][y + i] === 1
-        )
+        isPartContact.push(block[block.length - 1][i] > 0 && saveFld[x + block.length][y + i] > 0)
       }
     }
     return x + block.length === 20 || y + block[0].length > 10 || isPartContact.includes(true)
@@ -192,7 +197,7 @@ const Home: NextPage = () => {
     const addField = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < currentBlock.length; x++) {
       for (let y = 0; y < currentBlock[x].length; y++) {
-        if (currentBlock[x][y] === 1) addField[x + stgNum][y + sidePoint] = 1
+        if (currentBlock[x][y] > 0) addField[x + stgNum][y + sidePoint] = currentBlock[x][y]
       }
     }
     return addField
@@ -200,32 +205,16 @@ const Home: NextPage = () => {
 
   const landingBlock: number[][] = useMemo(() => {
     const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    const isPartContact: boolean[] = []
-    if (stgNum + currentBlock.length < 20 && sidePoint >= 0) {
-      for (let i = 1; i <= currentBlock.length; i++) {
-        for (let l = 0; l < currentBlock[0].length; l++) {
-          isPartContact.push(
-            currentBlock[i - 1][l] === 1 && saveFld[stgNum + i][sidePoint + l] === 1
-          )
-        }
-      }
-      for (let i = 0; i < currentBlock[0].length; i++) {
-        isPartContact.push(
-          currentBlock[currentBlock.length - 1][i] === 1 &&
-            saveFld[stgNum + currentBlock.length][sidePoint + i] === 1
-        )
-      }
-    }
-    if (stgNum + currentBlock.length === 20 || isPartContact.includes(true)) {
+    if (isContact(stgNum, sidePoint, currentBlock)) {
       // prettier-ignore
       blockDown.flat().map((elm, idx) => {
-        return elm === 1 ? { row: Math.floor(idx / 10), col: idx % 10 } : { row: -1, col: -1 }
+        return elm > 0 ? { row: Math.floor(idx / 10), col: idx % 10, val: elm } : { row: -1, col: -1, val: 0 }
       }).filter((elm) => elm.row >= 0).forEach((elm) => {
-        newField[elm.row][elm.col] = 1
+        newField[elm.row][elm.col] = elm.val
       })
     }
     const rtnField: number[][] = newField.filter((row: number[]) => {
-      return !row.every((val: number) => val === 1)
+      return !row.every((val: number) => val > 0)
     })
     const unshiftCnt = baseField.length - rtnField.length
     for (let i = 0; i < unshiftCnt; i++) {
@@ -238,7 +227,7 @@ const Home: NextPage = () => {
     const fusionFld = JSON.parse(JSON.stringify(baseField))
     for (let x = 0; x < 20; x++) {
       for (let y = 0; y < 10; y++) {
-        fusionFld[x][y] = blockDown[x][y] + saveFld[x][y] > 0 ? 1 : 0
+        fusionFld[x][y] = blockDown[x][y] + saveFld[x][y]
       }
     }
     return fusionFld
@@ -287,11 +276,7 @@ const Home: NextPage = () => {
         <Grid>
           {field.map((row, x) =>
             row.map((col, y) => (
-              <Area
-                key={`${x}-${y}`}
-                val={field[x][y]}
-                color={blockColors[blockIdx % hanger.length]}
-              >
+              <Area key={`${x}-${y}`} color={blockColors[field[x][y]]}>
                 {/* {x}, {y} */}
               </Area>
             ))
