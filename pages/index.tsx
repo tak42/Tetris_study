@@ -163,13 +163,11 @@ const Home: NextPage = () => {
   const isContact = (x: number, y: number, block: number[][]) => {
     const isPartContact: boolean[] = []
     if (x + block.length < 20 && y >= 0) {
-      for (let i = 1; i <= currentBlock.length; i++) {
-        for (let l = 0; l < currentBlock[0].length; l++) {
-          isPartContact.push(currentBlock[i - 1][l] > 0 && saveFld[stgNum + i][sidePoint + l] > 0)
+      for (let i = 1; i <= block.length; i++) {
+        for (let l = 0; l < block[0].length; l++) {
+          isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i][y + l] > 0)
+          isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i - 1][y + l] > 0)
         }
-      }
-      for (let i = 0; i < block[0].length; i++) {
-        isPartContact.push(block[block.length - 1][i] > 0 && saveFld[x + block.length][y + i] > 0)
       }
     }
     return x + block.length === 20 || y + block[0].length > 10 || isPartContact.includes(true)
@@ -243,11 +241,6 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
-    console.log(
-      saveFld.filter((row) => {
-        return row.every((val) => val === 0)
-      }).length
-    )
     // prettier-ignore
     if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
       setSaveFld(landingBlock)
