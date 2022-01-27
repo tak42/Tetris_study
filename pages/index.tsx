@@ -243,8 +243,13 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
+    console.log(
+      saveFld.filter((row) => {
+        return row.every((val) => val === 0)
+      }).length
+    )
     // prettier-ignore
-    if (saveFld.filter((row) => { return row.includes(1) }).length < 20) {
+    if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
       setSaveFld(landingBlock)
       setField(fieldFusion)
       if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -254,12 +259,17 @@ const Home: NextPage = () => {
         setCurrentBlock(hanger[(blockIdx + 1) % hanger.length])
         setBlockIdx((blockIdx) => ++blockIdx)
       }
+    } else {
+      alert('ゲームオーバーです')
+      onClick()
     }
   }, [stgNum, sidePoint, currentBlock])
 
   const onClick = () => {
     setSaveFld(baseField)
     setField(baseField)
+    setCurrentBlock(hanger[0])
+    setBlockIdx(0)
   }
 
   return (
