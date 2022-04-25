@@ -1,7 +1,6 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
-import { useKey } from 'react-use'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -47,117 +46,111 @@ const Area = styled.div<{ color: string }>`
 `
 
 const Home: NextPage = () => {
-  // Tetrisの特徴
-  // 1.ある一定の時間がたったらブロックが投下される
-  // 2.時間経過中は下り続ける
-  // 3.１行うまったらクリアされる
-  // 4.クリア行より上の行は１段さがる
-  // 5.最上段より上にブロックが来たら負け
-  const block_i: number[][] = [[1], [1], [1], [1]]
-  const block_o: number[][] = [
-    [2, 2],
-    [2, 2],
+  type Cell = [number, number]
+  type Field = { point: Cell; val: string }[]
+  type Block = {
+    shapeid: number
+    shape: number[]
+    color: string
+    degrees: number
+    spaceIdx: number[]
+    left: number
+    top: number
+  }
+  const shapes = [
+    { shapeid: 1, shape: [4, 1], color: 'lightBlue', degrees: 0, spaceIdx: [] },
+    { shapeid: 2, shape: [2, 2], color: 'yellow', degrees: 0, spaceIdx: [] },
+    { shapeid: 3, shape: [2, 3], color: 'purple', degrees: 0, spaceIdx: [] },
+    { shapeid: 4, shape: [3, 2], color: 'orange', degrees: 0, spaceIdx: [1, 3] },
+    { shapeid: 5, shape: [3, 2], color: 'blue', degrees: 0, spaceIdx: [0, 2] },
+    { shapeid: 6, shape: [2, 3], color: 'green', degrees: 0, spaceIdx: [0, 5] },
+    { shapeid: 7, shape: [2, 3], color: 'red', degrees: 0, spaceIdx: [2, 3] },
   ]
-  const block_t: number[][] = [
-    [0, 3, 0],
-    [3, 3, 3],
-  ]
-  const block_l: number[][] = [
-    [4, 0],
-    [4, 0],
-    [4, 4],
-  ]
-  const block_j: number[][] = [
-    [0, 5],
-    [0, 5],
-    [5, 5],
-  ]
-  const block_s: number[][] = [
-    [0, 6, 6],
-    [6, 6, 0],
-  ]
-  const block_z: number[][] = [
-    [7, 7, 0],
-    [0, 7, 7],
-  ]
-  const hanger: number[][][] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
-  const blockColors: string[] = [
-    'gray',
-    'lightBlue',
-    'yellow',
-    'purple',
-    'orange',
-    'blue',
-    'green',
-    'red',
-  ]
+  const baseField: Field = [...Array(200)].map((e, idx) => {
+    return { point: [Math.floor(idx / 20), idx % 10], val: 'gray' }
+  })
+
+  const [blocks, setBlocks] = useState([])
+
+  const randomBlocks = (): Block => {
+    const idx = Math.floor(Math.random() * shapes.length + 1)
+    return { ...shapes[idx], left: 4, top: 0 }
+  }
+
+  const stanbySet = () => {
+    return shapes.map((e) => randomBlocks()).slice(0, 4)
+  }
+
+  const nextSet = () => {
+    const shift = stanbyBlocks.shift()
+    return shift ? shift : randomBlocks()
+  }
+
+  const [stanbyBlocks, setStanbyBlocks] = useState<Block[]>(stanbySet)
+
+  const [nextBlocks, setNextBlocks] = useState<Block>(randomBlocks)
+
+  // const hanger: {}[] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
+  // const blockColors: string[] = [
+  //   'gray',
+  //   'lightBlue',
+  //   'yellow',
+  //   'purple',
+  //   'orange',
+  //   'blue',
+  //   'green',
+  //   'red',
+  // ]
   // prettier-ignore
-  const baseField: number[][] = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]
   const [field, setField] = useState(baseField)
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
-  const [stgNum, setStgNum] = useState(0)
-  const [currentBlock, setCurrentBlock] = useState(hanger[0])
+  const [stageN, setStageN] = useState(0)
+  const [currentBlock, setCurrentBlock] = useState(randomBlocks)
   const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
-  const renderLeft = () => {
-    if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
-      setSidePoint((sidePoint) => --sidePoint)
-    }
-  }
-  const renderRight = () => {
-    if (
-      !isContact(stgNum, sidePoint + 1, currentBlock) &&
-      sidePoint + currentBlock[0].length < 10
-    ) {
-      setSidePoint((sidePoint) => ++sidePoint)
-    }
-  }
-  const renderDown = () => {
-    if (!isContact(stgNum, sidePoint, currentBlock) && stgNum + currentBlock.length < 20) {
-      setStgNum((stgNum) => ++stgNum)
-    }
-  }
-  const renderUp = () => {
-    // 一回回転させるとどういう形になるか試す
-    const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
-    // 接触するかどうかを確認
-    const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
-    // 接触していなければ本物を回転させる
-    if (!tryIsContact) {
-      setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
-      setCurrentBlock(tryRotatedBlock)
-    }
-  }
-  // prettier-ignore
-  useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentBlock])
-  // prettier-ignore
-  useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentBlock])
-  // prettier-ignore
-  useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentBlock])
-  // prettier-ignore
-  useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
+
+  // const renderLeft = () => {
+  //   if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
+  //     setSidePoint((sidePoint) => --sidePoint)
+  //   }
+  // }
+
+  // const renderRight = () => {
+  //   if (
+  //     !isContact(stgNum, sidePoint + 1, currentBlock) &&
+  //     sidePoint + currentBlock[0].length < 10
+  //   ) {
+  //     setSidePoint((sidePoint) => ++sidePoint)
+  //   }
+  // }
+
+  // const renderDown = () => {
+  //   if (!isContact(stgNum, sidePoint, currentBlock) && stgNum + currentBlock.length < 20) {
+  //     setStgNum((stgNum) => ++stgNum)
+  //   }
+  // }
+
+  // const renderUp = () => {
+  //   // 一回回転させるとどういう形になるか試す
+  //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
+  //   // 接触するかどうかを確認
+  //   const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
+  //   // 接触していなければ本物を回転させる
+  //   if (!tryIsContact) {
+  //     setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
+  //     setCurrentBlock(tryRotatedBlock)
+  //   }
+  // }
+
+  // // prettier-ignore
+  // useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentBlock])
+  // // prettier-ignore
+  // useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentBlock])
+  // // prettier-ignore
+  // useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentBlock])
+  // // prettier-ignore
+  // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
 
   // 最下層または、他のブロックと接触しているかどうか
   const isContact = (x: number, y: number, block: number[][]) => {
@@ -165,8 +158,8 @@ const Home: NextPage = () => {
     if (x + block.length < 20 && y >= 0) {
       for (let i = 1; i <= block.length; i++) {
         for (let l = 0; l < block[0].length; l++) {
-          isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i][y + l] > 0)
-          isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i - 1][y + l] > 0)
+          // isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i][y + l] > 0)
+          // isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i - 1][y + l] > 0)
         }
       }
     }
@@ -191,49 +184,64 @@ const Home: NextPage = () => {
     }
     return rotatedBlock
   }
-  const blockDown: number[][] = useMemo(() => {
-    const addField = JSON.parse(JSON.stringify(baseField))
-    for (let x = 0; x < currentBlock.length; x++) {
-      for (let y = 0; y < currentBlock[x].length; y++) {
-        if (currentBlock[x][y] > 0) addField[x + stgNum][y + sidePoint] = currentBlock[x][y]
-      }
-    }
-    return addField
-  }, [stgNum, sidePoint, currentBlock])
 
-  const landingBlock: number[][] = useMemo(() => {
-    const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
-    if (isContact(stgNum, sidePoint, currentBlock)) {
-      // prettier-ignore
-      blockDown.flat().map((elm, idx) => {
-        return elm > 0 ? { row: Math.floor(idx / 10), col: idx % 10, val: elm } : { row: -1, col: -1, val: 0 }
-      }).filter((elm) => elm.row >= 0).forEach((elm) => {
-        newField[elm.row][elm.col] = elm.val
-      })
-    }
-    const rtnField: number[][] = newField.filter((row: number[]) => {
-      return !row.every((val: number) => val > 0)
+  const validate = (point: Cell, currentBlock: Block, stgN: number, sideP: number) => {
+    return (
+      point[0] <= currentBlock.top + currentBlock.shape[0] &&
+      point[1] <= currentBlock.left + currentBlock.shape[1]
+    )
+  }
+
+  const blockDown: Field = useMemo(() => {
+    const newField = [...baseField]
+    return newField.map((e) => {
+      // e.val = currentBlock.color
+      validate(e.point, currentBlock, stageN, sidePoint)
+        ? (e.val = currentBlock.color)
+        : (e.val = e.val)
+      return e
     })
-    const unshiftCnt = baseField.length - rtnField.length
-    for (let i = 0; i < unshiftCnt; i++) {
-      rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    }
-    return rtnField
-  }, [stgNum, sidePoint, currentBlock])
+    // for (let x = 0; x < currentBlock.length; x++) {
+    //   for (let y = 0; y < currentBlock[x].length; y++) {
+    //     if (currentBlock[x][y] > 0) addField[x + stgNum][y + sidePoint] = currentBlock[x][y]
+    //   }
+    // }
+    // return addField
+  }, [stageN, sidePoint, currentBlock])
 
-  const fieldFusion = useMemo(() => {
-    const fusionFld = JSON.parse(JSON.stringify(baseField))
-    for (let x = 0; x < 20; x++) {
-      for (let y = 0; y < 10; y++) {
-        fusionFld[x][y] = blockDown[x][y] + saveFld[x][y]
-      }
-    }
-    return fusionFld
-  }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
+  // const landingBlock: number[][] = useMemo(() => {
+  //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
+  //   if (isContact(stgNum, sidePoint, currentBlock)) {
+  //     // prettier-ignore
+  //     blockDown.flat().map((elm, idx) => {
+  //       return elm > 0 ? { row: Math.floor(idx / 10), col: idx % 10, val: elm } : { row: -1, col: -1, val: 0 }
+  //     }).filter((elm) => elm.row >= 0).forEach((elm) => {
+  //       newField[elm.row][elm.col] = elm.val
+  //     })
+  //   }
+  //   const rtnField: number[][] = newField.filter((row: number[]) => {
+  //     return !row.every((val: number) => val > 0)
+  //   })
+  //   const unshiftCnt = baseField.length - rtnField.length
+  //   for (let i = 0; i < unshiftCnt; i++) {
+  //     rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+  //   }
+  //   return rtnField
+  // }, [stgNum, sidePoint, currentBlock])
+
+  // const fieldFusion = useMemo(() => {
+  //   const fusionFld = JSON.parse(JSON.stringify(baseField))
+  //   for (let x = 0; x < 20; x++) {
+  //     for (let y = 0; y < 10; y++) {
+  //       // fusionFld[x][y] = blockDown[x][y] + saveFld[x][y]
+  //     }
+  //   }
+  //   return fusionFld
+  // }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setStgNum((stgNum) => ++stgNum)
+      setStageN((stgN) => ++stgN)
     }, 1000)
     return () => {
       clearTimeout(timeoutId)
@@ -241,30 +249,34 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
-    // prettier-ignore
-    if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
-      setSaveFld(landingBlock)
-      setField(fieldFusion)
-      if (isContact(stgNum, sidePoint, currentBlock)) {
-        setStgNum(0)
-        setRotation(0)
-        setSidePoint(4)
-        setCurrentBlock(hanger[(blockIdx + 1) % hanger.length])
-        setBlockIdx((blockIdx) => ++blockIdx)
-      }
-    } else {
-      alert('ゲームオーバーです')
-      onClick()
-    }
-  }, [stgNum, sidePoint, currentBlock])
+    setField(blockDown)
+    // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
+    //   // setSaveFld(landingBlock)
+    //   setField(fieldFusion)
+    //   if (isContact(stgNum, sidePoint, currentBlock)) {
+    //     setStgNum(0)
+    //     setRotation(0)
+    //     setSidePoint(4)
+    //     setCurrentBlock(hanger[(blockIdx + 1) % hanger.length])
+    //     setBlockIdx((blockIdx) => ++blockIdx)
+    //   }
+    // } else {
+    //   alert('ゲームオーバーです')
+    //   onClick()
+    // }
+  }, [stageN, sidePoint, currentBlock])
 
   const onClick = () => {
     setSaveFld(baseField)
     setField(baseField)
-    setCurrentBlock(hanger[0])
+    // setCurrentBlock(hanger[0])
+    setCurrentBlock(randomBlocks)
     setBlockIdx(0)
   }
-
+  const blockColor = (shapeid: number) => {
+    const find = shapes.filter((e) => e.shapeid === shapeid).pop()
+    return find ? find.color : 'gray'
+  }
   return (
     <Container>
       <Head>
@@ -277,13 +289,11 @@ const Home: NextPage = () => {
           <button onClick={() => onClick()}>リセット</button>
         </Header>
         <Grid>
-          {field.map((row, x) =>
-            row.map((col, y) => (
-              <Area key={`${x}-${y}`} color={blockColors[field[x][y]]}>
-                {/* {x}, {y} */}
-              </Area>
-            ))
-          )}
+          {field.map((e) => (
+            <Area key={`${e.point[0]}-${e.point[1]}`} color={blockColor(e.val)}>
+              {/* {x}, {y} */}
+            </Area>
+          ))}
         </Grid>
       </Main>
     </Container>
