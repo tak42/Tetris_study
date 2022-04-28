@@ -50,31 +50,33 @@ const Home: NextPage = () => {
   type Field = { point: Cell; val: string }[]
   type Block = {
     shapeid: number
-    shape: number[]
+    shape: [number, number]
     color: string
     degrees: number
     spaceIdx: number[]
     left: number
     top: number
   }
-  const shapes = [
-    { shapeid: 1, shape: [4, 1], color: 'lightBlue', degrees: 0, spaceIdx: [] },
-    { shapeid: 2, shape: [2, 2], color: 'yellow', degrees: 0, spaceIdx: [] },
-    { shapeid: 3, shape: [2, 3], color: 'purple', degrees: 0, spaceIdx: [] },
-    { shapeid: 4, shape: [3, 2], color: 'orange', degrees: 0, spaceIdx: [1, 3] },
-    { shapeid: 5, shape: [3, 2], color: 'blue', degrees: 0, spaceIdx: [0, 2] },
-    { shapeid: 6, shape: [2, 3], color: 'green', degrees: 0, spaceIdx: [0, 5] },
-    { shapeid: 7, shape: [2, 3], color: 'red', degrees: 0, spaceIdx: [2, 3] },
-  ]
+  const shapes: { shapeid: number; shape: [number, number]; color: string; spaceIdx: number[] }[] =
+    [
+      { shapeid: 1, shape: [4, 1], color: 'lightBlue', spaceIdx: [] },
+      { shapeid: 2, shape: [2, 2], color: 'yellow', spaceIdx: [] },
+      { shapeid: 3, shape: [2, 3], color: 'purple', spaceIdx: [] },
+      { shapeid: 4, shape: [3, 2], color: 'orange', spaceIdx: [1, 3] },
+      { shapeid: 5, shape: [3, 2], color: 'blue', spaceIdx: [0, 2] },
+      { shapeid: 6, shape: [2, 3], color: 'green', spaceIdx: [0, 5] },
+      { shapeid: 7, shape: [2, 3], color: 'red', spaceIdx: [2, 3] },
+    ]
+
   const baseField: Field = [...Array(200)].map((e, idx) => {
-    return { point: [Math.floor(idx / 20), idx % 10], val: 'gray' }
+    return { point: [Math.floor(idx / 10), idx % 10], val: 'gray' }
   })
 
   const [blocks, setBlocks] = useState([])
 
   const randomBlocks = (): Block => {
     const idx = Math.floor(Math.random() * shapes.length + 1)
-    return { ...shapes[idx], left: 4, top: 0 }
+    return { ...shapes[idx], degrees: 0, left: 4, top: 0 }
   }
 
   const stanbySet = () => {
@@ -105,7 +107,7 @@ const Home: NextPage = () => {
   const [field, setField] = useState(baseField)
   const [saveFld, setSaveFld] = useState(baseField) // 保存用field
   const [stageN, setStageN] = useState(0)
-  const [currentBlock, setCurrentBlock] = useState(randomBlocks)
+  const [currentBlock, setCurrentBlock] = useState({ ...shapes[0], degrees: 0, left: 4, top: 0 })
   const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
@@ -185,29 +187,32 @@ const Home: NextPage = () => {
     return rotatedBlock
   }
 
-  const validate = (point: Cell, currentBlock: Block, stgN: number, sideP: number) => {
+  const validate = (point: Cell, currentBlock: Block) => {
     return (
-      point[0] <= currentBlock.top + currentBlock.shape[0] &&
-      point[1] <= currentBlock.left + currentBlock.shape[1]
+      point[0] <= currentBlock.top + currentBlock.shape[0] - 1 &&
+      point[1] <= currentBlock.left + currentBlock.shape[1] - 1
     )
   }
 
   const blockDown: Field = useMemo(() => {
     const newField = [...baseField]
+    const blockData: Field = [...Array(currentBlock.shape[0] * currentBlock.shape[1])].map(
+      (e, idx) => {
+        return {
+          point: [
+            Math.floor(idx / currentBlock.shape[1]) + currentBlock.top,
+            (idx % currentBlock.shape[1]) + currentBlock.left,
+          ],
+          val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
+        }
+      }
+    )
     return newField.map((e) => {
-      // e.val = currentBlock.color
-      validate(e.point, currentBlock, stageN, sidePoint)
-        ? (e.val = currentBlock.color)
-        : (e.val = e.val)
+      const find = blockData.find((x) => e.point[0] === x.point[0] && e.point[1] === x.point[1])
+      find !== undefined ? (e.val = find.val) : (e.val = 'gray')
       return e
     })
-    // for (let x = 0; x < currentBlock.length; x++) {
-    //   for (let y = 0; y < currentBlock[x].length; y++) {
-    //     if (currentBlock[x][y] > 0) addField[x + stgNum][y + sidePoint] = currentBlock[x][y]
-    //   }
-    // }
-    // return addField
-  }, [stageN, sidePoint, currentBlock])
+  }, [currentBlock])
 
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
@@ -249,6 +254,12 @@ const Home: NextPage = () => {
   })
 
   useEffect(() => {
+    // console.log(field)
+    // console.log(currentBlock)
+    // const block: Block = randomBlocks()
+    const block = { ...currentBlock }
+    setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
+    // console.log(currentBlock)
     setField(blockDown)
     // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     //   // setSaveFld(landingBlock)
@@ -264,19 +275,21 @@ const Home: NextPage = () => {
     //   alert('ゲームオーバーです')
     //   onClick()
     // }
-  }, [stageN, sidePoint, currentBlock])
+  }, [stageN, sidePoint])
 
   const onClick = () => {
-    setSaveFld(baseField)
-    setField(baseField)
-    // setCurrentBlock(hanger[0])
-    setCurrentBlock(randomBlocks)
-    setBlockIdx(0)
+    console.log(blockDown)
+    // setSaveFld(baseField)
+    // setField(baseField)
+    // // setCurrentBlock(hanger[0])
+    // setCurrentBlock(randomBlocks)
+    // setBlockIdx(0)
   }
   const blockColor = (shapeid: number) => {
     const find = shapes.filter((e) => e.shapeid === shapeid).pop()
     return find ? find.color : 'gray'
   }
+  // console.log(field)
   return (
     <Container>
       <Head>
@@ -290,9 +303,7 @@ const Home: NextPage = () => {
         </Header>
         <Grid>
           {field.map((e) => (
-            <Area key={`${e.point[0]}-${e.point[1]}`} color={blockColor(e.val)}>
-              {/* {x}, {y} */}
-            </Area>
+            <Area key={`${e.point[0]}-${e.point[1]}`} color={e.val}></Area>
           ))}
         </Grid>
       </Main>
