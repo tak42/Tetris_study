@@ -191,7 +191,7 @@ const Home: NextPage = () => {
     return rotatedBlock
   }
   const isMatch = (cellA: Cell, cellB: Cell) => {
-    return cellA[0] === cellB[1] && cellA[1] === cellB[1]
+    return cellA[0] === cellB[0] && cellA[1] === cellB[1]
   }
 
   const validate = (point: Cell, currentBlock: Block) => {
@@ -246,8 +246,9 @@ const Home: NextPage = () => {
         })
       )
       .flat()
+    // console.log(rtnFld)
     return rtnFld
-  }, [currentBlock])
+  }, [saveFld, blockDown])
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -290,7 +291,6 @@ const Home: NextPage = () => {
   useEffect(() => {
     const block = { ...currentBlock }
     setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
-    // console.log(currentBlock)
     setField(blockDown)
     // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     //   // setSaveFld(landingBlock)
