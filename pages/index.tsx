@@ -111,7 +111,8 @@ const Home: NextPage = () => {
   const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
-
+  const [isStop, setIsStop] = useState(true)
+  const [timer, setTimer] = useState(false)
   // const renderLeft = () => {
   //   if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
   //     setSidePoint((sidePoint) => --sidePoint)
@@ -156,7 +157,10 @@ const Home: NextPage = () => {
 
   // 最下層または、他のブロックと接触しているかどうか
   const isContact = useMemo(() => {
-    // 接触しているブロックがあるかどうかを検出する
+    const contactBlock = saveFld.filter((e) => {
+      return false
+    })
+    return contactBlock.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
   }, [stageN, sidePoint, currentBlock, saveFld])
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
   // const isContact = (x: number, y: number, block: number[][]) => {
@@ -219,11 +223,13 @@ const Home: NextPage = () => {
     })
   }, [currentBlock])
 
-  const BlockLanding: Field = useMemo(() => {
+  const blockLanding: Field = useMemo(() => {
     const landedFld = [...saveFld].map((e) => {
       const find = blockDown.find((x) => isMatch(e.point, x.point))
+      if (find !== undefined && find.val !== 'gray') console.log(find.point)
       return find !== undefined && isContact ? find : e
     })
+    // const landedFld = isContact ? [...blockDown] : [...saveFld]
     const newField = [...Array(20)]
       .map((e1, idx1) =>
         [...Array(10)].map((e2, idx2) => {
@@ -246,7 +252,6 @@ const Home: NextPage = () => {
         })
       )
       .flat()
-    // console.log(rtnFld)
     return rtnFld
   }, [saveFld, blockDown])
   // const landingBlock: number[][] = useMemo(() => {
@@ -278,22 +283,27 @@ const Home: NextPage = () => {
   //   }
   //   return fusionFld
   // }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
+  const fusionField = useMemo(() => {
+    return [...blockLanding].map((square) => {
+      const find = blockDown.find((x) => isMatch(x.point, square.point))
+      return square.val === 'gray' && find !== undefined ? find : square
+    })
+  }, [blockDown, blockLanding])
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setStageN((stgN) => ++stgN)
-    }, 1000)
-    return () => {
-      clearTimeout(timeoutId)
+    if (timer) {
+      const timerId = setInterval(stageUp, 1000)
+      return () => clearTimeout(timerId)
     }
-  })
+  }, [timer])
 
   useEffect(() => {
     const block = { ...currentBlock }
     setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
+    console.log(fusionField)
     setField(blockDown)
     // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
-    //   // setSaveFld(landingBlock)
+    setSaveFld(blockLanding)
     //   setField(fieldFusion)
     //   if (isContact(stgNum, sidePoint, currentBlock)) {
     //     setStgNum(0)
@@ -307,6 +317,17 @@ const Home: NextPage = () => {
     //   onClick()
     // }
   }, [stageN, sidePoint])
+
+  const onSwitch = () => {
+    isStop ? setTimer(true) : setTimer(false)
+    setIsStop(!isStop)
+  }
+  const stageUp = () => {
+    setStageN((stgN) => {
+      const newN = ++stgN
+      return newN > 19 ? 0 : newN
+    })
+  }
 
   const onClick = () => {
     // setSaveFld(baseField)
@@ -330,6 +351,7 @@ const Home: NextPage = () => {
       <Main>
         <Header>
           <button onClick={() => onClick()}>リセット</button>
+          <button onClick={() => onSwitch()}>{isStop ? 'スタート' : 'ストップ'}</button>
         </Header>
         <Grid>
           {field.map((e) => (
