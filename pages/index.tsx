@@ -224,11 +224,14 @@ const Home: NextPage = () => {
   }, [currentBlock])
 
   const blockLanding: Field = useMemo(() => {
+    // if (isContact) console.log(blockDown)
     const landedFld = [...saveFld].map((e) => {
       const find = blockDown.find((x) => isMatch(e.point, x.point))
-      if (find !== undefined && find.val !== 'gray') console.log(find.point)
-      return find !== undefined && isContact ? find : e
+      if (isContact) console.log(e.point)
+      find !== undefined && isContact ? (e.val = find.val) : (e.val = 'gray')
+      return e
     })
+    if (isContact) console.log(landedFld)
     // const landedFld = isContact ? [...blockDown] : [...saveFld]
     const newField = [...Array(20)]
       .map((e1, idx1) =>
@@ -253,7 +256,7 @@ const Home: NextPage = () => {
       )
       .flat()
     return rtnFld
-  }, [saveFld, blockDown])
+  }, [saveFld, blockDown, isContact])
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -300,7 +303,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     const block = { ...currentBlock }
     setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
-    console.log(fusionField)
+    // console.log(fusionField)
     setField(blockDown)
     // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     setSaveFld(blockLanding)
@@ -318,7 +321,7 @@ const Home: NextPage = () => {
     // }
   }, [stageN, sidePoint])
 
-  const onSwitch = () => {
+  const onClickSwitch = () => {
     isStop ? setTimer(true) : setTimer(false)
     setIsStop(!isStop)
   }
@@ -351,7 +354,7 @@ const Home: NextPage = () => {
       <Main>
         <Header>
           <button onClick={() => onClick()}>リセット</button>
-          <button onClick={() => onSwitch()}>{isStop ? 'スタート' : 'ストップ'}</button>
+          <button onClick={() => onClickSwitch()}>{isStop ? 'スタート' : 'ストップ'}</button>
         </Header>
         <Grid>
           {field.map((e) => (
