@@ -157,11 +157,12 @@ const Home: NextPage = () => {
 
   // 最下層または、他のブロックと接触しているかどうか
   const isContact = useMemo(() => {
-    const contactBlock = saveFld.filter((e) => {
-      return false
-    })
+    const contactBlock = saveFld.filter(
+      (square) =>
+        square.point[0] === currentBlock.top + currentBlock.shape[0] && square.val !== 'gray'
+    )
     return contactBlock.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
-  }, [stageN, sidePoint, currentBlock, saveFld])
+  }, [currentBlock, saveFld])
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
   // const isContact = (x: number, y: number, block: number[][]) => {
   //   const isPartContact: boolean[] = []
@@ -224,15 +225,10 @@ const Home: NextPage = () => {
   }, [currentBlock])
 
   const blockLanding: Field = useMemo(() => {
-    // if (isContact) console.log(blockDown)
-    const landedFld = [...saveFld].map((e) => {
-      const find = blockDown.find((x) => isMatch(e.point, x.point))
-      if (isContact) console.log(e.point)
-      find !== undefined && isContact ? (e.val = find.val) : (e.val = 'gray')
-      return e
+    const landedFld = saveFld.map((square) => {
+      const find = blockDown.find((x) => isMatch(square.point, x.point))
+      return { ...square, val: find !== undefined && isContact ? find.val : square.val }
     })
-    if (isContact) console.log(landedFld)
-    // const landedFld = isContact ? [...blockDown] : [...saveFld]
     const newField = [...Array(20)]
       .map((e1, idx1) =>
         [...Array(10)].map((e2, idx2) => {
@@ -250,13 +246,13 @@ const Home: NextPage = () => {
     const rtnFld: Field = newField
       .map((row, idx1) =>
         row.map((col, idx2) => {
-          const cell: Cell = [Math.floor(idx1 / 10), idx2 % 10]
+          const cell: Cell = [idx1, idx2]
           return { point: cell, val: col }
         })
       )
       .flat()
     return rtnFld
-  }, [saveFld, blockDown, isContact])
+  }, [isContact])
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -287,11 +283,11 @@ const Home: NextPage = () => {
   //   return fusionFld
   // }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
   const fusionField = useMemo(() => {
-    return [...blockLanding].map((square) => {
+    return [...saveFld].map((square) => {
       const find = blockDown.find((x) => isMatch(x.point, square.point))
-      return square.val === 'gray' && find !== undefined ? find : square
+      return { ...square, val: square.val === 'gray' && find !== undefined ? find.val : square.val }
     })
-  }, [blockDown, blockLanding])
+  }, [blockDown, saveFld])
 
   useEffect(() => {
     if (timer) {
@@ -303,10 +299,10 @@ const Home: NextPage = () => {
   useEffect(() => {
     const block = { ...currentBlock }
     setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
-    // console.log(fusionField)
-    setField(blockDown)
-    // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     setSaveFld(blockLanding)
+    setField(fusionField)
+    // setField(fusionField)
+    // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     //   setField(fieldFusion)
     //   if (isContact(stgNum, sidePoint, currentBlock)) {
     //     setStgNum(0)
