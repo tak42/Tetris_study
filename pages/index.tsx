@@ -8,7 +8,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100%;
   min-height: 100vh;
   padding: 0 0.5rem;
   background-color: black;
@@ -30,7 +30,7 @@ const Grid = styled.div`
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  max-width: 500px;
+  max-width: 300px;
   margin-top: 3rem;
 
   @media (max-width: 600px) {
@@ -39,8 +39,8 @@ const Grid = styled.div`
   }
 `
 const Area = styled.div<{ color: string }>`
-  width: 50px;
-  height: 50px;
+  width: 30px;
+  height: 30px;
   border: 1px solid black;
   background-color: ${(props) => props.color};
 `
