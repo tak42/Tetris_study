@@ -195,6 +195,7 @@ const Home: NextPage = () => {
     }
     return rotatedBlock
   }
+
   const isMatch = (cellA: Cell, cellB: Cell) => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
   }
@@ -225,14 +226,16 @@ const Home: NextPage = () => {
   }, [currentBlock])
 
   const blockLanding: Field = useMemo(() => {
-    const landedFld = saveFld.map((square) => {
+    console.log(saveFld)
+    const landedFld = [...saveFld].map((square) => {
       const find = blockDown.find((x) => isMatch(square.point, x.point))
+      if (find !== undefined && isContact) console.log(find.point, find.val)
       return { ...square, val: find !== undefined && isContact ? find.val : square.val }
     })
     const newField = [...Array(20)]
-      .map((e1, idx1) =>
-        [...Array(10)].map((e2, idx2) => {
-          const find = landedFld.find((x) => isMatch(x.point, [idx1, idx2]))
+      .map((_, x) =>
+        [...Array(10)].map((_, y) => {
+          const find = landedFld.find((square) => isMatch(square.point, [x, y]))
           return find !== undefined ? find.val : 'gray'
         })
       )
@@ -252,7 +255,7 @@ const Home: NextPage = () => {
       )
       .flat()
     return rtnFld
-  }, [isContact])
+  }, [blockDown, saveFld, isContact])
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -283,11 +286,11 @@ const Home: NextPage = () => {
   //   return fusionFld
   // }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
   const fusionField = useMemo(() => {
-    return [...saveFld].map((square) => {
+    return [...blockLanding].map((square) => {
       const find = blockDown.find((x) => isMatch(x.point, square.point))
       return { ...square, val: square.val === 'gray' && find !== undefined ? find.val : square.val }
     })
-  }, [blockDown, saveFld])
+  }, [blockDown, blockLanding])
 
   useEffect(() => {
     if (timer) {
@@ -299,7 +302,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     const block = { ...currentBlock }
     setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
-    setSaveFld(blockLanding)
+    // setSaveFld(blockLanding)
     setField(fusionField)
     // setField(fusionField)
     // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
