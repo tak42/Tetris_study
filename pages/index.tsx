@@ -68,9 +68,10 @@ const Home: NextPage = () => {
       { shapeid: 7, shape: [2, 3], color: 'red', spaceIdx: [2, 3] },
     ]
 
-  const baseField: Field = [...Array(200)].map((e, idx) => {
-    return { point: [Math.floor(idx / 10), idx % 10], val: 'gray' }
-  })
+  const baseField: Field = [...Array(200)].map((e, idx) => ({
+    point: [Math.floor(idx / 10), idx % 10],
+    val: 'gray',
+  }))
 
   const [blocks, setBlocks] = useState([])
 
@@ -104,8 +105,8 @@ const Home: NextPage = () => {
   //   'red',
   // ]
   // prettier-ignore
-  const [field, setField] = useState(baseField)
-  const [saveFld, setSaveFld] = useState(baseField) // 保存用field
+  const [field, setField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
+  const [saveFld, setSaveFld] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [stageN, setStageN] = useState(0)
   const [currentBlock, setCurrentBlock] = useState({ ...shapes[0], degrees: 0, left: 4, top: 0 })
   const [blockIdx, setBlockIdx] = useState(0)
@@ -162,7 +163,7 @@ const Home: NextPage = () => {
         square.point[0] === currentBlock.top + currentBlock.shape[0] && square.val !== 'gray'
     )
     return contactBlock.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
-  }, [currentBlock, saveFld])
+  }, [currentBlock])
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
   // const isContact = (x: number, y: number, block: number[][]) => {
   //   const isPartContact: boolean[] = []
@@ -178,33 +179,26 @@ const Home: NextPage = () => {
   // }
 
   // 試しに回転したときの形を返す
-  const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
-    // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
-    const tryRotation = rotation === 3 ? 0 : rotation + 1
-    let rotatedBlock: number[][] = JSON.parse(JSON.stringify(block))
-    if (tryRotation === 1) {
-      const newX = block[0].length
-      const newY = block.length
-      const newBlock = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
-      for (let i = 0; i < newX; i++) {
-        for (let l = 0; l < newY; l++) {
-          newBlock[i][l] = block[newY - l - 1][i]
-        }
-      }
-      rotatedBlock = newBlock
-    }
-    return rotatedBlock
-  }
+  // const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
+  //   // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
+  //   const tryRotation = rotation === 3 ? 0 : rotation + 1
+  //   let rotatedBlock: number[][] = JSON.parse(JSON.stringify(block))
+  //   if (tryRotation === 1) {
+  //     const newX = block[0].length
+  //     const newY = block.length
+  //     const newBlock = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
+  //     for (let i = 0; i < newX; i++) {
+  //       for (let l = 0; l < newY; l++) {
+  //         newBlock[i][l] = block[newY - l - 1][i]
+  //       }
+  //     }
+  //     rotatedBlock = newBlock
+  //   }
+  //   return rotatedBlock
+  // }
 
   const isMatch = (cellA: Cell, cellB: Cell) => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
-  }
-
-  const validate = (point: Cell, currentBlock: Block) => {
-    return (
-      point[0] <= currentBlock.top + currentBlock.shape[0] - 1 &&
-      point[1] <= currentBlock.left + currentBlock.shape[1] - 1
-    )
   }
 
   const blockDown: Field = useMemo(() => {
@@ -212,12 +206,10 @@ const Home: NextPage = () => {
     const cb = { row: currentBlock.shape[0], col: currentBlock.shape[1] }
     const top = currentBlock.top
     const left = currentBlock.left
-    const blockData: Field = [...Array(cb.row * cb.col)].map((e, idx) => {
-      return {
-        point: [Math.floor(idx / cb.col) + top, (idx % cb.col) + left],
-        val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
-      }
-    })
+    const blockData: Field = [...Array(cb.row * cb.col)].map((e, idx) => ({
+      point: [Math.floor(idx / cb.col) + top, (idx % cb.col) + left],
+      val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
+    }))
     return newField.map((e) => {
       const find = blockData.find((x) => isMatch(e.point, x.point))
       find !== undefined ? (e.val = find.val) : (e.val = 'gray')
@@ -226,10 +218,8 @@ const Home: NextPage = () => {
   }, [currentBlock])
 
   const blockLanding: Field = useMemo(() => {
-    console.log(saveFld)
     const landedFld = [...saveFld].map((square) => {
       const find = blockDown.find((x) => isMatch(square.point, x.point))
-      if (find !== undefined && isContact) console.log(find.point, find.val)
       return { ...square, val: find !== undefined && isContact ? find.val : square.val }
     })
     const newField = [...Array(20)]
@@ -239,9 +229,7 @@ const Home: NextPage = () => {
           return find !== undefined ? find.val : 'gray'
         })
       )
-      .filter((row: string[]) => {
-        return !row.every((val) => val !== 'gray')
-      })
+      .filter((row: string[]) => !row.every((val) => val !== 'gray'))
     const unshiftCnt = 20 - newField.length
     for (let i = 0; i < unshiftCnt; i++) {
       newField.unshift([...Array(10)].map(() => 'gray'))
@@ -255,7 +243,7 @@ const Home: NextPage = () => {
       )
       .flat()
     return rtnFld
-  }, [blockDown, saveFld, isContact])
+  }, [blockDown, isContact])
   // const landingBlock: number[][] = useMemo(() => {
   //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
