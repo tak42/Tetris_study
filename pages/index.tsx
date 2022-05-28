@@ -1,6 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
+import { useKey } from 'react-use'
 import styled from 'styled-components'
 
 const Container = styled.div`
@@ -61,7 +62,7 @@ const Home: NextPage = () => {
     [
       { shapeid: 1, shape: [4, 1], color: 'lightBlue', spaceIdx: [] },
       { shapeid: 2, shape: [2, 2], color: 'yellow', spaceIdx: [] },
-      { shapeid: 3, shape: [2, 3], color: 'purple', spaceIdx: [] },
+      { shapeid: 3, shape: [2, 3], color: 'purple', spaceIdx: [0, 2] },
       { shapeid: 4, shape: [3, 2], color: 'orange', spaceIdx: [1, 3] },
       { shapeid: 5, shape: [3, 2], color: 'blue', spaceIdx: [0, 2] },
       { shapeid: 6, shape: [2, 3], color: 'green', spaceIdx: [0, 5] },
@@ -106,14 +107,23 @@ const Home: NextPage = () => {
   // ]
   // prettier-ignore
   const [field, setField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
-  const [saveFld, setSaveFld] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
+  const [savedField, setSavedField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [stageN, setStageN] = useState(0)
-  const [currentBlock, setCurrentBlock] = useState({ ...shapes[0], degrees: 0, left: 4, top: 0 })
+  const [currentBlock, setCurrentBlock] = useState<Block>({
+    ...shapes[0],
+    degrees: 0,
+    left: 4,
+    top: 0,
+  })
   const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
   const [rotation, setRotation] = useState(0)
   const [isStop, setIsStop] = useState(true)
   const [timer, setTimer] = useState(false)
+
+  const isMatch = (cellA: Cell, cellB: Cell) => {
+    return cellA[0] === cellB[0] && cellA[1] === cellB[1]
+  }
   // const renderLeft = () => {
   //   if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
   //     setSidePoint((sidePoint) => --sidePoint)
@@ -148,36 +158,77 @@ const Home: NextPage = () => {
   // }
 
   // // prettier-ignore
-  // useKey('ArrowLeft', () => { renderLeft() }, {}, [sidePoint, stgNum, currentBlock])
-  // // prettier-ignore
-  // useKey('ArrowRight', () => { renderRight() }, {}, [sidePoint, stgNum, currentBlock])
-  // // prettier-ignore
   // useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentBlock])
   // // prettier-ignore
   // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
 
-  // 最下層または、他のブロックと接触しているかどうか
-  const isContact = useMemo(() => {
-    const contactBlock = saveFld.filter(
-      (square) =>
-        square.point[0] === currentBlock.top + currentBlock.shape[0] && square.val !== 'gray'
+  const searchAlreadPlacedCells = (targetCells: Cell[], savedField: Field): Cell[] => {
+    return targetCells.filter(
+      (point) =>
+        savedField.filter((cell) => isMatch(point, cell.point) && cell.val !== 'gray').length
     )
-    return contactBlock.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
-  }, [currentBlock])
-  //   if (isContact(stgNum, sidePoint, currentBlock)) {
-  // const isContact = (x: number, y: number, block: number[][]) => {
-  //   const isPartContact: boolean[] = []
-  //   if (x + block.length < 20 && y >= 0) {
-  //     for (let i = 1; i <= block.length; i++) {
-  //       for (let l = 0; l < block[0].length; l++) {
-  //         // isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i][y + l] > 0)
-  //         // isPartContact.push(block[i - 1][l] > 0 && saveFld[x + i - 1][y + l] > 0)
-  //       }
-  //     }
-  //   }
-  //   return x + block.length === 20 || y + block[0].length > 10 || isPartContact.includes(true)
-  // }
+  }
 
+  const isLanded = useMemo(() => {
+    const rowLength = currentBlock.shape[0]
+    const colLength = currentBlock.shape[1]
+    const alreadyPlacedCells: Cell[] = searchAlreadPlacedCells(
+      [...Array(currentBlock.shape[1])].map<Cell>((__, idx) => {
+        const bottomIdx = (rowLength - 1) * colLength + idx
+        const isEmptyCell = currentBlock.spaceIdx.includes(bottomIdx)
+        const xCoordinate = currentBlock.left + idx
+        const yCoordinate = isEmptyCell
+          ? currentBlock.top + rowLength - 1
+          : currentBlock.top + rowLength
+        return [yCoordinate, xCoordinate]
+      }),
+      savedField
+    )
+    return alreadyPlacedCells.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
+  }, [currentBlock, savedField])
+
+  const isLeftContact: boolean = useMemo(() => {
+    const blockWidth = currentBlock.shape[1]
+    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left - 1
+    const alreadyLeftPlacedCells: Cell[] = searchAlreadPlacedCells(
+      [...Array(currentBlock.shape[0])].map<Cell>((__, idx) => {
+        const leftIdx = idx * blockWidth
+        const isEmptyCell = currentBlock.spaceIdx.includes(leftIdx)
+        const xCoordinate = isEmptyCell ? currentBlock.left : nextLeftPosition
+        const yCoordinate = currentBlock.top + idx
+        return [yCoordinate, xCoordinate]
+      }),
+      savedField
+    )
+    return nextLeftPosition === 0 || alreadyLeftPlacedCells.length > 0
+  }, [currentBlock, savedField])
+
+  const isRightContact: boolean = useMemo(() => {
+    const blockWidth = currentBlock.shape[1]
+    const nextRightPosition =
+      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth
+    const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
+      [...Array(currentBlock.shape[0])].map<Cell>((__, idx) => {
+        const currentDepth = idx + 1
+        const rightIdx = currentDepth * blockWidth - 1
+        const isEmptyCell = currentBlock.spaceIdx.includes(rightIdx)
+        const xCoordinate = isEmptyCell ? nextRightPosition - 1 : nextRightPosition
+        const yCoordinate = currentBlock.top + idx
+        return [yCoordinate, xCoordinate]
+      }),
+      savedField
+    )
+    return nextRightPosition === 9 || alreadyRightPlacedCells.length > 0
+  }, [currentBlock, savedField])
+
+  const moveLeft = () => {
+    setSidePoint((sidePoint) => (isLeftContact === false ? --sidePoint : sidePoint))
+  }
+  const moveRight = () => {
+    setSidePoint((sidePoint) => (isRightContact === false ? ++sidePoint : sidePoint))
+  }
+  useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
+  useKey('ArrowRight', moveRight, {}, [isRightContact])
   // 試しに回転したときの形を返す
   // const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
   //   // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
@@ -197,35 +248,33 @@ const Home: NextPage = () => {
   //   return rotatedBlock
   // }
 
-  const isMatch = (cellA: Cell, cellB: Cell) => {
-    return cellA[0] === cellB[0] && cellA[1] === cellB[1]
-  }
-
   const blockDown: Field = useMemo(() => {
-    const newField = [...baseField]
-    const cb = { row: currentBlock.shape[0], col: currentBlock.shape[1] }
-    const top = currentBlock.top
-    const left = currentBlock.left
-    const blockData: Field = [...Array(cb.row * cb.col)].map((e, idx) => ({
-      point: [Math.floor(idx / cb.col) + top, (idx % cb.col) + left],
+    const newField: Field = JSON.parse(JSON.stringify(baseField))
+    const row = currentBlock.shape[0]
+    const col = currentBlock.shape[1]
+    const blockData: Field = [...Array(row * col)].map((__, idx) => ({
+      point: [Math.floor(idx / col) + currentBlock.top, (idx % col) + currentBlock.left],
       val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
     }))
-    return newField.map((e) => {
-      const find = blockData.find((x) => isMatch(e.point, x.point))
-      find !== undefined ? (e.val = find.val) : (e.val = 'gray')
-      return e
+    return newField.map((cell) => {
+      const find = blockData.find((x) => isMatch(cell.point, x.point))
+      find !== undefined ? (cell.val = find.val) : (cell.val = 'gray')
+      return cell
     })
-  }, [currentBlock])
+  }, [currentBlock, sidePoint, stageN, timer])
 
   const blockLanding: Field = useMemo(() => {
-    const landedFld = [...saveFld].map((square) => {
-      const find = blockDown.find((x) => isMatch(square.point, x.point))
-      return { ...square, val: find !== undefined && isContact ? find.val : square.val }
+    const landedField: Field = savedField.map((cell, idx) => {
+      const blockDownCell = blockDown[idx]
+      const colorValue = [cell.val, blockDownCell.val].includes(currentBlock.color)
+        ? currentBlock.color
+        : 'gray'
+      return { point: cell.point, val: isLanded ? colorValue : cell.val }
     })
     const newField = [...Array(20)]
       .map((_, x) =>
         [...Array(10)].map((_, y) => {
-          const find = landedFld.find((square) => isMatch(square.point, [x, y]))
+          const find = landedField.find((cell) => isMatch(cell.point, [x, y]))
           return find !== undefined ? find.val : 'gray'
         })
       )
@@ -243,9 +292,9 @@ const Home: NextPage = () => {
       )
       .flat()
     return rtnFld
-  }, [blockDown, isContact])
+  }, [blockDown, savedField, timer])
   // const landingBlock: number[][] = useMemo(() => {
-  //   const newField: number[][] = JSON.parse(JSON.stringify(saveFld))
+  //   const newField: number[][] = JSON.parse(JSON.stringify(savedField))
   //   if (isContact(stgNum, sidePoint, currentBlock)) {
   //     // prettier-ignore
   //     blockDown.flat().map((elm, idx) => {
@@ -264,21 +313,12 @@ const Home: NextPage = () => {
   //   return rtnField
   // }, [stgNum, sidePoint, currentBlock])
 
-  // const fieldFusion = useMemo(() => {
-  //   const fusionFld = JSON.parse(JSON.stringify(baseField))
-  //   for (let x = 0; x < 20; x++) {
-  //     for (let y = 0; y < 10; y++) {
-  //       // fusionFld[x][y] = blockDown[x][y] + saveFld[x][y]
-  //     }
-  //   }
-  //   return fusionFld
-  // }, [stgNum, sidePoint, blockDown, saveFld, currentBlock])
   const fusionField = useMemo(() => {
-    return [...blockLanding].map((square) => {
-      const find = blockDown.find((x) => isMatch(x.point, square.point))
-      return { ...square, val: square.val === 'gray' && find !== undefined ? find.val : square.val }
+    return [...savedField].map((cell) => {
+      const find = blockDown.find((x) => isMatch(x.point, cell.point))
+      return { ...cell, val: cell.val === 'gray' && find !== undefined ? find.val : cell.val }
     })
-  }, [blockDown, blockLanding])
+  }, [blockDown, savedField, timer])
 
   useEffect(() => {
     if (timer) {
@@ -288,12 +328,14 @@ const Home: NextPage = () => {
   }, [timer])
 
   useEffect(() => {
-    const block = { ...currentBlock }
-    setCurrentBlock({ ...block, ...{ top: stageN, left: sidePoint } })
-    // setSaveFld(blockLanding)
-    setField(fusionField)
+    if (timer) {
+      setCurrentBlock({ ...currentBlock, ...{ top: stageN, left: sidePoint } })
+      setSavedField(blockLanding)
+      setField(fusionField)
+      if (isLanded) stageReset()
+    }
     // setField(fusionField)
-    // if (saveFld.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
+    // if (savedField.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     //   setField(fieldFusion)
     //   if (isContact(stgNum, sidePoint, currentBlock)) {
     //     setStgNum(0)
@@ -306,7 +348,7 @@ const Home: NextPage = () => {
     //   alert('ゲームオーバーです')
     //   onClick()
     // }
-  }, [stageN, sidePoint])
+  }, [timer, stageN, sidePoint])
 
   const onClickSwitch = () => {
     isStop ? setTimer(true) : setTimer(false)
@@ -319,9 +361,23 @@ const Home: NextPage = () => {
     })
   }
 
-  const onClick = () => {
-    // setSaveFld(baseField)
-    // setField(baseField)
+  const stageReset = () => {
+    setTimer(false)
+    setTimeout(() => {
+      setStageN(0)
+      setTimer(true)
+      clearTimeout()
+    }, 1000)
+  }
+
+  const onClickReset = () => {
+    onClickSwitch()
+    setCurrentBlock({ ...JSON.parse(JSON.stringify(currentBlock)), top: 0, left: 4 })
+    setField(JSON.parse(JSON.stringify(baseField)))
+    setSavedField(JSON.parse(JSON.stringify(baseField)))
+    console.log(currentBlock)
+    setStageN(0)
+    setSidePoint(4)
     // // setCurrentBlock(hanger[0])
     // setCurrentBlock(randomBlocks)
     // setBlockIdx(0)
@@ -340,7 +396,7 @@ const Home: NextPage = () => {
       </Head>
       <Main>
         <Header>
-          <button onClick={() => onClick()}>リセット</button>
+          <button onClick={() => onClickReset()}>リセット</button>
           <button onClick={() => onClickSwitch()}>{isStop ? 'スタート' : 'ストップ'}</button>
         </Header>
         <Grid>
