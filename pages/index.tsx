@@ -94,18 +94,6 @@ const Home: NextPage = () => {
 
   const [nextBlocks, setNextBlocks] = useState<Block>(randomBlocks)
 
-  // const hanger: {}[] = [block_i, block_o, block_t, block_l, block_j, block_s, block_z]
-  // const blockColors: string[] = [
-  //   'gray',
-  //   'lightBlue',
-  //   'yellow',
-  //   'purple',
-  //   'orange',
-  //   'blue',
-  //   'green',
-  //   'red',
-  // ]
-  // prettier-ignore
   const [field, setField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [savedField, setSavedField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [stageN, setStageN] = useState(0)
@@ -124,20 +112,6 @@ const Home: NextPage = () => {
   const isMatch = (cellA: Cell, cellB: Cell) => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
   }
-  // const renderLeft = () => {
-  //   if (!isContact(stgNum, sidePoint - 1, currentBlock) && sidePoint > 0) {
-  //     setSidePoint((sidePoint) => --sidePoint)
-  //   }
-  // }
-
-  // const renderRight = () => {
-  //   if (
-  //     !isContact(stgNum, sidePoint + 1, currentBlock) &&
-  //     sidePoint + currentBlock[0].length < 10
-  //   ) {
-  //     setSidePoint((sidePoint) => ++sidePoint)
-  //   }
-  // }
 
   // const renderDown = () => {
   //   if (!isContact(stgNum, sidePoint, currentBlock) && stgNum + currentBlock.length < 20) {
@@ -227,8 +201,12 @@ const Home: NextPage = () => {
   const moveRight = () => {
     setSidePoint((sidePoint) => (isRightContact === false ? ++sidePoint : sidePoint))
   }
+  const moveDown = () => {
+    setStageN((stageN) => (isLanded === false ? ++stageN : stageN))
+  }
   useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
   useKey('ArrowRight', moveRight, {}, [isRightContact])
+  useKey('ArrowDown', moveDown, {}, [isLanded])
   // 試しに回転したときの形を返す
   // const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
   //   // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
