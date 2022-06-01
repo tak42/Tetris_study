@@ -49,25 +49,28 @@ const Area = styled.div<{ color: string }>`
 const Home: NextPage = () => {
   type Cell = [number, number]
   type Field = { point: Cell; val: string }[]
-  type Block = {
+  type BlockShape = {
     shapeid: number
-    shape: [number, number]
+    height: number
+    width: number
     color: string
-    degrees: number
     spaceIdx: number[]
+  }
+  type Block = {
+    shape: BlockShape
+    degrees: number
     left: number
     top: number
   }
-  const shapes: { shapeid: number; shape: [number, number]; color: string; spaceIdx: number[] }[] =
-    [
-      { shapeid: 1, shape: [4, 1], color: 'lightBlue', spaceIdx: [] },
-      { shapeid: 2, shape: [2, 2], color: 'yellow', spaceIdx: [] },
-      { shapeid: 3, shape: [2, 3], color: 'purple', spaceIdx: [0, 2] },
-      { shapeid: 4, shape: [3, 2], color: 'orange', spaceIdx: [1, 3] },
-      { shapeid: 5, shape: [3, 2], color: 'blue', spaceIdx: [0, 2] },
-      { shapeid: 6, shape: [2, 3], color: 'green', spaceIdx: [0, 5] },
-      { shapeid: 7, shape: [2, 3], color: 'red', spaceIdx: [2, 3] },
-    ]
+  const shapes: BlockShape[] = [
+    { shapeid: 1, height: 4, width: 1, color: 'lightBlue', spaceIdx: [] },
+    { shapeid: 2, height: 2, width: 2, color: 'yellow', spaceIdx: [] },
+    { shapeid: 3, height: 2, width: 3, color: 'purple', spaceIdx: [0, 2] },
+    { shapeid: 4, height: 3, width: 2, color: 'orange', spaceIdx: [1, 3] },
+    { shapeid: 5, height: 3, width: 2, color: 'blue', spaceIdx: [0, 2] },
+    { shapeid: 6, height: 2, width: 3, color: 'green', spaceIdx: [0, 5] },
+    { shapeid: 7, height: 2, width: 3, color: 'red', spaceIdx: [2, 3] },
+  ]
 
   const baseField: Field = [...Array(200)].map((e, idx) => ({
     point: [Math.floor(idx / 10), idx % 10],
@@ -77,8 +80,8 @@ const Home: NextPage = () => {
   const [blocks, setBlocks] = useState([])
 
   const randomBlocks = (): Block => {
-    const idx = Math.floor(Math.random() * shapes.length + 1)
-    return { ...shapes[idx], degrees: 0, left: 4, top: 0 }
+    const idx = Math.floor(Math.random() * shapes.length)
+    return { shape: { ...JSON.parse(JSON.stringify(shapes[idx])) }, degrees: 0, left: 4, top: 0 }
   }
 
   const stanbySet = () => {
@@ -98,7 +101,7 @@ const Home: NextPage = () => {
   const [savedField, setSavedField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [stageN, setStageN] = useState(0)
   const [currentBlock, setCurrentBlock] = useState<Block>({
-    ...shapes[0],
+    shape: { ...JSON.parse(JSON.stringify(shapes[0])) },
     degrees: 0,
     left: 4,
     top: 0,
@@ -113,12 +116,6 @@ const Home: NextPage = () => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
   }
 
-  // const renderDown = () => {
-  //   if (!isContact(stgNum, sidePoint, currentBlock) && stgNum + currentBlock.length < 20) {
-  //     setStgNum((stgNum) => ++stgNum)
-  //   }
-  // }
-
   // const renderUp = () => {
   //   // 一回回転させるとどういう形になるか試す
   //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
@@ -131,9 +128,6 @@ const Home: NextPage = () => {
   //   }
   // }
 
-  // // prettier-ignore
-  // useKey('ArrowDown', () => { renderDown() }, {}, [stgNum, sidePoint, currentBlock])
-  // // prettier-ignore
   // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
 
   const searchAlreadPlacedCells = (targetCells: Cell[], savedField: Field): Cell[] => {
@@ -144,48 +138,51 @@ const Home: NextPage = () => {
   }
 
   const isLanded = useMemo(() => {
-    const rowLength = currentBlock.shape[0]
-    const colLength = currentBlock.shape[1]
+    const blockHeight = currentBlock.shape.height
+    const colLength = currentBlock.shape.width
     const alreadyPlacedCells: Cell[] = searchAlreadPlacedCells(
-      [...Array(currentBlock.shape[1])].map<Cell>((__, idx) => {
-        const bottomIdx = (rowLength - 1) * colLength + idx
-        const isEmptyCell = currentBlock.spaceIdx.includes(bottomIdx)
+      [...Array(colLength)].map<Cell>((__, idx) => {
+        const bottomIdx = (blockHeight - 1) * colLength + idx
+        const isEmptyCell = currentBlock.shape.spaceIdx.includes(bottomIdx)
         const xCoordinate = currentBlock.left + idx
         const yCoordinate = isEmptyCell
-          ? currentBlock.top + rowLength - 1
-          : currentBlock.top + rowLength
+          ? currentBlock.top + blockHeight - 1
+          : currentBlock.top + blockHeight
         return [yCoordinate, xCoordinate]
       }),
       savedField
     )
-    return alreadyPlacedCells.length > 0 || currentBlock.top + currentBlock.shape[0] === 20
+    return alreadyPlacedCells.length > 0 || currentBlock.top + blockHeight === 20
   }, [currentBlock, savedField])
 
   const isLeftContact: boolean = useMemo(() => {
-    const blockWidth = currentBlock.shape[1]
-    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left - 1
+    const blockHeight = currentBlock.shape.height
+    const blockWidth = currentBlock.shape.width
+    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left
     const alreadyLeftPlacedCells: Cell[] = searchAlreadPlacedCells(
-      [...Array(currentBlock.shape[0])].map<Cell>((__, idx) => {
+      [...Array(blockHeight)].map<Cell>((__, idx) => {
         const leftIdx = idx * blockWidth
-        const isEmptyCell = currentBlock.spaceIdx.includes(leftIdx)
+        const isEmptyCell = currentBlock.shape.spaceIdx.includes(leftIdx)
         const xCoordinate = isEmptyCell ? currentBlock.left : nextLeftPosition
         const yCoordinate = currentBlock.top + idx
         return [yCoordinate, xCoordinate]
       }),
       savedField
     )
+    console.log(currentBlock.left)
     return nextLeftPosition === 0 || alreadyLeftPlacedCells.length > 0
   }, [currentBlock, savedField])
 
   const isRightContact: boolean = useMemo(() => {
-    const blockWidth = currentBlock.shape[1]
+    const blockHeight = currentBlock.shape.height
+    const blockWidth = currentBlock.shape.width
     const nextRightPosition =
-      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth
+      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth - 1
     const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
-      [...Array(currentBlock.shape[0])].map<Cell>((__, idx) => {
+      [...Array(blockHeight)].map<Cell>((__, idx) => {
         const currentDepth = idx + 1
         const rightIdx = currentDepth * blockWidth - 1
-        const isEmptyCell = currentBlock.spaceIdx.includes(rightIdx)
+        const isEmptyCell = currentBlock.shape.spaceIdx.includes(rightIdx)
         const xCoordinate = isEmptyCell ? nextRightPosition - 1 : nextRightPosition
         const yCoordinate = currentBlock.top + idx
         return [yCoordinate, xCoordinate]
@@ -198,12 +195,15 @@ const Home: NextPage = () => {
   const moveLeft = () => {
     setSidePoint((sidePoint) => (isLeftContact === false ? --sidePoint : sidePoint))
   }
+
   const moveRight = () => {
     setSidePoint((sidePoint) => (isRightContact === false ? ++sidePoint : sidePoint))
   }
+
   const moveDown = () => {
     setStageN((stageN) => (isLanded === false ? ++stageN : stageN))
   }
+
   useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
   useKey('ArrowRight', moveRight, {}, [isRightContact])
   useKey('ArrowDown', moveDown, {}, [isLanded])
@@ -228,11 +228,14 @@ const Home: NextPage = () => {
 
   const blockDown: Field = useMemo(() => {
     const newField: Field = JSON.parse(JSON.stringify(baseField))
-    const row = currentBlock.shape[0]
-    const col = currentBlock.shape[1]
-    const blockData: Field = [...Array(row * col)].map((__, idx) => ({
-      point: [Math.floor(idx / col) + currentBlock.top, (idx % col) + currentBlock.left],
-      val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
+    const blockHeight = currentBlock.shape.height
+    const blockWidth = currentBlock.shape.width
+    const blockData: Field = [...Array(blockHeight * blockWidth)].map((__, idx) => ({
+      point: [
+        Math.floor(idx / blockWidth) + currentBlock.top,
+        (idx % blockWidth) + currentBlock.left,
+      ],
+      val: currentBlock.shape.spaceIdx.includes(idx) ? 'gray' : currentBlock.shape.color,
     }))
     return newField.map((cell) => {
       const find = blockData.find((x) => isMatch(cell.point, x.point))
@@ -244,8 +247,8 @@ const Home: NextPage = () => {
   const blockLanding: Field = useMemo(() => {
     const landedField: Field = savedField.map((cell, idx) => {
       const blockDownCell = blockDown[idx]
-      const colorValue = [cell.val, blockDownCell.val].includes(currentBlock.color)
-        ? currentBlock.color
+      const colorValue = [cell.val, blockDownCell.val].includes(currentBlock.shape.color)
+        ? currentBlock.shape.color
         : 'gray'
       return { point: cell.point, val: isLanded ? colorValue : cell.val }
     })
@@ -343,6 +346,7 @@ const Home: NextPage = () => {
     setTimer(false)
     setTimeout(() => {
       setStageN(0)
+      setSidePoint(4)
       setTimer(true)
       clearTimeout()
     }, 1000)
@@ -353,18 +357,15 @@ const Home: NextPage = () => {
     setCurrentBlock({ ...JSON.parse(JSON.stringify(currentBlock)), top: 0, left: 4 })
     setField(JSON.parse(JSON.stringify(baseField)))
     setSavedField(JSON.parse(JSON.stringify(baseField)))
-    console.log(currentBlock)
     setStageN(0)
     setSidePoint(4)
-    // // setCurrentBlock(hanger[0])
-    // setCurrentBlock(randomBlocks)
-    // setBlockIdx(0)
   }
+
   const blockColor = (shapeid: number) => {
     const find = shapes.filter((e) => e.shapeid === shapeid).pop()
     return find ? find.color : 'gray'
   }
-  // console.log(field)
+
   return (
     <Container>
       <Head>
