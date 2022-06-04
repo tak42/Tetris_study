@@ -144,7 +144,7 @@ const Home: NextPage = () => {
   const isLeftContact: boolean = useMemo(() => {
     const blockHeight = currentBlock.shape.height
     const blockWidth = currentBlock.shape.width
-    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left
+    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left - 1
     const alreadyLeftPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const leftIdx = idx * blockWidth
@@ -155,14 +155,14 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return nextLeftPosition === 0 || alreadyLeftPlacedCells.length > 0
+    return currentBlock.left === 0 || alreadyLeftPlacedCells.length > 0 || isLanded
   }, [currentBlock, savedField])
 
   const isRightContact: boolean = useMemo(() => {
     const blockHeight = currentBlock.shape.height
     const blockWidth = currentBlock.shape.width
     const nextRightPosition =
-      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth - 1
+      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth
     const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const currentDepth = idx + 1
@@ -174,7 +174,7 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return nextRightPosition === 9 || alreadyRightPlacedCells.length > 0
+    return currentBlock.left === 9 || alreadyRightPlacedCells.length > 0 || isLanded
   }, [currentBlock, savedField])
 
   const moveLeft = () => {
@@ -241,7 +241,7 @@ const Home: NextPage = () => {
       find !== undefined ? (cell.val = find.val) : (cell.val = 'gray')
       return cell
     })
-  }, [currentBlock, sidePoint, stageN, timer])
+  }, [currentBlock, timer])
 
   const blockLanding: Field = useMemo(() => {
     const landedField: Field = savedField.map((cell, idx) => {
