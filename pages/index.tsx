@@ -116,20 +116,6 @@ const Home: NextPage = () => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
   }
 
-  // const renderUp = () => {
-  //   // 一回回転させるとどういう形になるか試す
-  //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
-  //   // 接触するかどうかを確認
-  //   const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
-  //   // 接触していなければ本物を回転させる
-  //   if (!tryIsContact) {
-  //     setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
-  //     setCurrentBlock(tryRotatedBlock)
-  //   }
-  // }
-
-  // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
-
   const searchAlreadPlacedCells = (targetCells: Cell[], savedField: Field): Cell[] => {
     return targetCells.filter(
       (point) =>
@@ -169,7 +155,6 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    console.log(currentBlock.left)
     return nextLeftPosition === 0 || alreadyLeftPlacedCells.length > 0
   }, [currentBlock, savedField])
 
@@ -207,6 +192,20 @@ const Home: NextPage = () => {
   useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
   useKey('ArrowRight', moveRight, {}, [isRightContact])
   useKey('ArrowDown', moveDown, {}, [isLanded])
+
+  // const renderUp = () => {
+  //   // 一回回転させるとどういう形になるか試す
+  //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
+  //   // 接触するかどうかを確認
+  //   const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
+  //   // 接触していなければ本物を回転させる
+  //   if (!tryIsContact) {
+  //     setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
+  //     setCurrentBlock(tryRotatedBlock)
+  //   }
+  // }
+
+  // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
   // 試しに回転したときの形を返す
   // const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
   //   // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
@@ -273,49 +272,42 @@ const Home: NextPage = () => {
       )
       .flat()
     return rtnFld
-  }, [blockDown, savedField, timer])
-  // const landingBlock: number[][] = useMemo(() => {
-  //   const newField: number[][] = JSON.parse(JSON.stringify(savedField))
-  //   if (isContact(stgNum, sidePoint, currentBlock)) {
-  //     // prettier-ignore
-  //     blockDown.flat().map((elm, idx) => {
-  //       return elm > 0 ? { row: Math.floor(idx / 10), col: idx % 10, val: elm } : { row: -1, col: -1, val: 0 }
-  //     }).filter((elm) => elm.row >= 0).forEach((elm) => {
-  //       newField[elm.row][elm.col] = elm.val
-  //     })
-  //   }
-  //   const rtnField: number[][] = newField.filter((row: number[]) => {
-  //     return !row.every((val: number) => val > 0)
-  //   })
-  //   const unshiftCnt = baseField.length - rtnField.length
-  //   for (let i = 0; i < unshiftCnt; i++) {
-  //     rtnField.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-  //   }
-  //   return rtnField
-  // }, [stgNum, sidePoint, currentBlock])
+  }, [savedField, timer])
 
   const fusionField = useMemo(() => {
     return [...savedField].map((cell) => {
       const find = blockDown.find((x) => isMatch(x.point, cell.point))
       return { ...cell, val: cell.val === 'gray' && find !== undefined ? find.val : cell.val }
     })
-  }, [blockDown, savedField, timer])
+  }, [blockDown, timer])
+
+  const stageReset = () => {
+    return new Promise((resolve, reject) => {
+      setTimer(false)
+      setTimeout(() => {
+        setStageN(0)
+        setSidePoint(4)
+        setTimer(true)
+        clearTimeout()
+        resolve('clear Success!')
+      }, 1000)
+    })
+  }
+
+  const fieldSetMethodCall = () => {
+    setField(fusionField)
+    setSavedField(blockLanding)
+  }
+
+  const parameterSettingMethodCall = async () => {
+    if (isLanded) await stageReset()
+    setCurrentBlock({ ...currentBlock, ...{ top: stageN, left: sidePoint } })
+  }
 
   useEffect(() => {
-    if (timer) {
-      const timerId = setInterval(stageUp, 1000)
-      return () => clearTimeout(timerId)
-    }
-  }, [timer])
-
-  useEffect(() => {
-    if (timer) {
-      setCurrentBlock({ ...currentBlock, ...{ top: stageN, left: sidePoint } })
-      setSavedField(blockLanding)
-      setField(fusionField)
-      if (isLanded) stageReset()
-    }
-    // setField(fusionField)
+    if (timer === false) return
+    fieldSetMethodCall()
+    parameterSettingMethodCall()
     // if (savedField.filter((row) => { return row.every((val) => val === 0) }).length > 0) {
     //   setField(fieldFusion)
     //   if (isContact(stgNum, sidePoint, currentBlock)) {
@@ -331,10 +323,6 @@ const Home: NextPage = () => {
     // }
   }, [timer, stageN, sidePoint])
 
-  const onClickSwitch = () => {
-    isStop ? setTimer(true) : setTimer(false)
-    setIsStop(!isStop)
-  }
   const stageUp = () => {
     setStageN((stgN) => {
       const newN = ++stgN
@@ -342,14 +330,16 @@ const Home: NextPage = () => {
     })
   }
 
-  const stageReset = () => {
-    setTimer(false)
-    setTimeout(() => {
-      setStageN(0)
-      setSidePoint(4)
-      setTimer(true)
-      clearTimeout()
-    }, 1000)
+  useEffect(() => {
+    if (timer) {
+      const timerId = setInterval(stageUp, 500)
+      return () => clearTimeout(timerId)
+    }
+  }, [timer])
+
+  const onClickSwitch = () => {
+    isStop ? setTimer(true) : setTimer(false)
+    setIsStop(!isStop)
   }
 
   const onClickReset = () => {
