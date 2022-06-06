@@ -189,10 +189,40 @@ const Home: NextPage = () => {
     setStageN((stageN) => (isLanded === false ? ++stageN : stageN))
   }
 
+  const rotationMethod: {
+    [key: number]: (block: Block) => Block
+  } = {
+    90: (block: Block): Block => {
+      return rotateDegrees90(block)
+    },
+    180: (block: Block): Block => {
+      return rotateDegrees180(block)
+    },
+  }
+  const rotateDegrees90 = (block: Block) => {
+    return block
+  }
+
+  const rotateDegrees180 = (block: Block) => {
+    return block
+  }
+
+  const tryToRotate = (block: Block) => {
+    const nextDegrees = block.degrees + 90 > 270 ? 0 : block.degrees + 90
+    const rotatedBlock = rotationMethod[nextDegrees](block)
+    console.log(rotatedBlock)
+    return block
+  }
+
+  const rotateBlock = () => {
+    tryToRotate(currentBlock)
+    // const contactResult = [isLeftContact(rotatedBlock), isRightContact(rotatedBlock)]
+  }
+
   useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
   useKey('ArrowRight', moveRight, {}, [isRightContact])
   useKey('ArrowDown', moveDown, {}, [isLanded])
-
+  useKey('ArrowUp', rotateBlock, {}, [currentBlock])
   // const renderUp = () => {
   //   // 一回回転させるとどういう形になるか試す
   //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
