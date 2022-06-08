@@ -50,7 +50,7 @@ const Home: NextPage = () => {
   type Cell = [number, number]
   type Field = { point: Cell; val: string }[]
   type BlockShape = {
-    shapeid: number
+    shapeCode: string
     height: number
     width: number
     color: string
@@ -63,39 +63,24 @@ const Home: NextPage = () => {
     top: number
   }
   const shapes: BlockShape[] = [
-    { shapeid: 1, height: 4, width: 1, color: 'lightBlue', spaceIdx: [] },
-    { shapeid: 2, height: 2, width: 2, color: 'yellow', spaceIdx: [] },
-    { shapeid: 3, height: 2, width: 3, color: 'purple', spaceIdx: [0, 2] },
-    { shapeid: 4, height: 3, width: 2, color: 'orange', spaceIdx: [1, 3] },
-    { shapeid: 5, height: 3, width: 2, color: 'blue', spaceIdx: [0, 2] },
-    { shapeid: 6, height: 2, width: 3, color: 'green', spaceIdx: [0, 5] },
-    { shapeid: 7, height: 2, width: 3, color: 'red', spaceIdx: [2, 3] },
+    { shapeCode: 'I', height: 1, width: 4, color: 'lightBlue', spaceIdx: [] },
+    { shapeCode: 'O', height: 2, width: 2, color: 'yellow', spaceIdx: [] },
+    { shapeCode: 'T', height: 2, width: 3, color: 'purple', spaceIdx: [0, 2] },
+    { shapeCode: 'L', height: 3, width: 2, color: 'orange', spaceIdx: [1, 3] },
+    { shapeCode: 'J', height: 3, width: 2, color: 'blue', spaceIdx: [0, 2] },
+    { shapeCode: 'S', height: 2, width: 3, color: 'green', spaceIdx: [0, 5] },
+    { shapeCode: 'Z', height: 2, width: 3, color: 'red', spaceIdx: [2, 3] },
   ]
-
-  const baseField: Field = [...Array(200)].map((e, idx) => ({
-    point: [Math.floor(idx / 10), idx % 10],
-    val: 'gray',
-  }))
 
   const [blocks, setBlocks] = useState([])
 
-  const randomBlocks = (): Block => {
-    const idx = Math.floor(Math.random() * shapes.length)
-    return { shape: { ...JSON.parse(JSON.stringify(shapes[idx])) }, degrees: 0, left: 4, top: 0 }
+  const cellConversion = (index: number): Cell => {
+    return [Math.floor(index / 10), index % 10]
   }
-
-  const stanbySet = () => {
-    return shapes.map((e) => randomBlocks()).slice(0, 4)
-  }
-
-  const nextSet = () => {
-    const shift = stanbyBlocks.shift()
-    return shift ? shift : randomBlocks()
-  }
-
-  const [stanbyBlocks, setStanbyBlocks] = useState<Block[]>(stanbySet)
-
-  const [nextBlocks, setNextBlocks] = useState<Block>(randomBlocks)
+  const baseField: Field = [...Array(200)].map((e, idx) => ({
+    point: cellConversion(idx),
+    val: 'gray',
+  }))
 
   const [field, setField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [savedField, setSavedField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
@@ -106,11 +91,27 @@ const Home: NextPage = () => {
     left: 4,
     top: 0,
   })
-  const [blockIdx, setBlockIdx] = useState(0)
   const [sidePoint, setSidePoint] = useState(4)
-  const [rotation, setRotation] = useState(0)
   const [isStop, setIsStop] = useState(true)
   const [timer, setTimer] = useState(false)
+
+  const randomBlocks = (): Block => {
+    const idx = Math.floor(Math.random() * shapes.length)
+    return { shape: { ...JSON.parse(JSON.stringify(shapes[idx])) }, degrees: 0, left: 4, top: 0 }
+  }
+
+  const stanbySet = () => {
+    return shapes.map((__) => randomBlocks()).slice(0, 4)
+  }
+
+  const nextSet = () => {
+    const shift = stanbyBlocks.shift()
+    return shift ? shift : randomBlocks()
+  }
+
+  const [stanbyBlocks, setStanbyBlocks] = useState<Block[]>(stanbySet)
+
+  const [nextBlocks, setNextBlocks] = useState<Block>(randomBlocks)
 
   const isMatch = (cellA: Cell, cellB: Cell) => {
     return cellA[0] === cellB[0] && cellA[1] === cellB[1]
@@ -200,7 +201,22 @@ const Home: NextPage = () => {
     },
   }
   const rotateDegrees90 = (block: Block) => {
-    return block
+    // 3*3マスを意識(x-max:3, y-max:3)
+    // 上のマス目を0は左下(0,0),90は左上(0,2),180は右上(2,2),270右下(2,0)から生成
+    // [row, col]
+    const topMinusPoint = 2
+    // ポイントを起点にblockを描画
+    const newHeight = block.shape.width
+    const newWidth = block.shape.height
+    // 新しいスペースの位置を特定する必要あり
+    const newSpaceIdx = block.shape.spaceIdx
+    // fieldのどの位置になるか実際の値を入れ込む
+    return {
+      shape: { ...block.shape, height: newHeight, width: newWidth, spaceIdx: newSpaceIdx },
+      degrees: 90,
+      left: block.left,
+      top: block.top - topMinusPoint,
+    }
   }
 
   const rotateDegrees180 = (block: Block) => {
@@ -223,37 +239,6 @@ const Home: NextPage = () => {
   useKey('ArrowRight', moveRight, {}, [isRightContact])
   useKey('ArrowDown', moveDown, {}, [isLanded])
   useKey('ArrowUp', rotateBlock, {}, [currentBlock])
-  // const renderUp = () => {
-  //   // 一回回転させるとどういう形になるか試す
-  //   const tryRotatedBlock: number[][] = tryRotaingBlock(stgNum, sidePoint, currentBlock, rotation)
-  //   // 接触するかどうかを確認
-  //   const tryIsContact: boolean = isContact(stgNum, sidePoint, tryRotatedBlock)
-  //   // 接触していなければ本物を回転させる
-  //   if (!tryIsContact) {
-  //     setRotation((rotation) => (rotation === 3 ? 0 : rotation++))
-  //     setCurrentBlock(tryRotatedBlock)
-  //   }
-  // }
-
-  // useKey('ArrowUp', () => { renderUp() }, {}, [stgNum, sidePoint, currentBlock])
-  // 試しに回転したときの形を返す
-  // const tryRotaingBlock = (x: number, y: number, block: number[][], rotation: number) => {
-  //   // rotation:0=素,1=右に90度,2=右に180度,3=右に270度
-  //   const tryRotation = rotation === 3 ? 0 : rotation + 1
-  //   let rotatedBlock: number[][] = JSON.parse(JSON.stringify(block))
-  //   if (tryRotation === 1) {
-  //     const newX = block[0].length
-  //     const newY = block.length
-  //     const newBlock = [...Array(newX)].map(() => [...Array(newY)].map(() => 0))
-  //     for (let i = 0; i < newX; i++) {
-  //       for (let l = 0; l < newY; l++) {
-  //         newBlock[i][l] = block[newY - l - 1][i]
-  //       }
-  //     }
-  //     rotatedBlock = newBlock
-  //   }
-  //   return rotatedBlock
-  // }
 
   const blockDown: Field = useMemo(() => {
     const newField: Field = JSON.parse(JSON.stringify(baseField))
@@ -379,11 +364,6 @@ const Home: NextPage = () => {
     setSavedField(JSON.parse(JSON.stringify(baseField)))
     setStageN(0)
     setSidePoint(4)
-  }
-
-  const blockColor = (shapeid: number) => {
-    const find = shapes.filter((e) => e.shapeid === shapeid).pop()
-    return find ? find.color : 'gray'
   }
 
   return (
