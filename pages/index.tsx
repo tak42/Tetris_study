@@ -3,6 +3,8 @@ import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
 import { useKey } from 'react-use'
 import styled from 'styled-components'
+import { Block, shapes } from './blockShape'
+import { rotationMethod } from './rotation'
 
 const Container = styled.div`
   display: flex;
@@ -45,32 +47,9 @@ const Area = styled.div<{ color: string }>`
   border: 1px solid black;
   background-color: ${(props) => props.color};
 `
-
 const Home: NextPage = () => {
   type Cell = [number, number]
   type Field = { point: Cell; val: string }[]
-  type BlockShape = {
-    shapeCode: string
-    height: number
-    width: number
-    color: string
-    spaceIdx: number[]
-  }
-  type Block = {
-    shape: BlockShape
-    degrees: number
-    left: number
-    top: number
-  }
-  const shapes: BlockShape[] = [
-    { shapeCode: 'I', height: 1, width: 4, color: 'lightBlue', spaceIdx: [] },
-    { shapeCode: 'O', height: 2, width: 2, color: 'yellow', spaceIdx: [] },
-    { shapeCode: 'T', height: 2, width: 3, color: 'purple', spaceIdx: [0, 2] },
-    { shapeCode: 'L', height: 3, width: 2, color: 'orange', spaceIdx: [1, 3] },
-    { shapeCode: 'J', height: 3, width: 2, color: 'blue', spaceIdx: [0, 2] },
-    { shapeCode: 'S', height: 2, width: 3, color: 'green', spaceIdx: [0, 5] },
-    { shapeCode: 'Z', height: 2, width: 3, color: 'red', spaceIdx: [2, 3] },
-  ]
 
   const [blocks, setBlocks] = useState([])
 
@@ -86,7 +65,11 @@ const Home: NextPage = () => {
   const [savedField, setSavedField] = useState<Field>(JSON.parse(JSON.stringify(baseField)))
   const [stageN, setStageN] = useState(0)
   const [currentBlock, setCurrentBlock] = useState<Block>({
-    shape: { ...JSON.parse(JSON.stringify(shapes[0])) },
+    shapeCode: shapes[3].shapeCode,
+    height: shapes[3].height,
+    width: shapes[3].width,
+    color: shapes[3].color,
+    spaceIdx: shapes[3].originalSpaceIdx,
     degrees: 0,
     left: 4,
     top: 0,
@@ -97,7 +80,16 @@ const Home: NextPage = () => {
 
   const randomBlocks = (): Block => {
     const idx = Math.floor(Math.random() * shapes.length)
-    return { shape: { ...JSON.parse(JSON.stringify(shapes[idx])) }, degrees: 0, left: 4, top: 0 }
+    return {
+      shapeCode: shapes[idx].shapeCode,
+      height: shapes[idx].height,
+      width: shapes[idx].width,
+      color: shapes[idx].color,
+      spaceIdx: shapes[idx].originalSpaceIdx,
+      degrees: 0,
+      left: 4,
+      top: 0,
+    }
   }
 
   const stanbySet = () => {
@@ -125,12 +117,13 @@ const Home: NextPage = () => {
   }
 
   const isLanded = useMemo(() => {
-    const blockHeight = currentBlock.shape.height
-    const colLength = currentBlock.shape.width
+    const blockHeight = currentBlock.height
+    const colLength = currentBlock.width
     const alreadyPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(colLength)].map<Cell>((__, idx) => {
         const bottomIdx = (blockHeight - 1) * colLength + idx
-        const isEmptyCell = currentBlock.shape.spaceIdx.includes(bottomIdx)
+        // L字が270度の時、深さが2のスペースが深さ1までしか認識できていない
+        const isEmptyCell = currentBlock.spaceIdx.includes(bottomIdx)
         const xCoordinate = currentBlock.left + idx
         const yCoordinate = isEmptyCell
           ? currentBlock.top + blockHeight - 1
@@ -143,13 +136,13 @@ const Home: NextPage = () => {
   }, [currentBlock, savedField])
 
   const isLeftContact: boolean = useMemo(() => {
-    const blockHeight = currentBlock.shape.height
-    const blockWidth = currentBlock.shape.width
+    const blockHeight = currentBlock.height
+    const blockWidth = currentBlock.width
     const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left - 1
     const alreadyLeftPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const leftIdx = idx * blockWidth
-        const isEmptyCell = currentBlock.shape.spaceIdx.includes(leftIdx)
+        const isEmptyCell = currentBlock.spaceIdx.includes(leftIdx)
         const xCoordinate = isEmptyCell ? currentBlock.left : nextLeftPosition
         const yCoordinate = currentBlock.top + idx
         return [yCoordinate, xCoordinate]
@@ -160,15 +153,15 @@ const Home: NextPage = () => {
   }, [currentBlock, savedField])
 
   const isRightContact: boolean = useMemo(() => {
-    const blockHeight = currentBlock.shape.height
-    const blockWidth = currentBlock.shape.width
+    const blockHeight = currentBlock.height
+    const blockWidth = currentBlock.width
     const nextRightPosition =
       currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth
     const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const currentDepth = idx + 1
         const rightIdx = currentDepth * blockWidth - 1
-        const isEmptyCell = currentBlock.shape.spaceIdx.includes(rightIdx)
+        const isEmptyCell = currentBlock.spaceIdx.includes(rightIdx)
         const xCoordinate = isEmptyCell ? nextRightPosition - 1 : nextRightPosition
         const yCoordinate = currentBlock.top + idx
         return [yCoordinate, xCoordinate]
@@ -190,48 +183,9 @@ const Home: NextPage = () => {
     setStageN((stageN) => (isLanded === false ? ++stageN : stageN))
   }
 
-  const rotationMethod: {
-    [key: number]: (block: Block) => Block
-  } = {
-    90: (block: Block): Block => {
-      return rotateDegrees90(block)
-    },
-    180: (block: Block): Block => {
-      return rotateDegrees180(block)
-    },
-  }
-  const rotateDegrees90 = (block: Block) => {
-    // 3*3マスを意識(x-max:3, y-max:3)
-    // 上のマス目を0は左下(0,0),90は左上(0,2),180は右上(2,2),270右下(2,0)から生成
-    // [row, col]
-    const topMinusPoint = 2
-    // ポイントを起点にblockを描画
-    const newHeight = block.shape.width
-    const newWidth = block.shape.height
-    // 新しいスペースの位置を特定する必要あり
-    const newSpaceIdx = block.shape.spaceIdx
-    // fieldのどの位置になるか実際の値を入れ込む
-    return {
-      shape: { ...block.shape, height: newHeight, width: newWidth, spaceIdx: newSpaceIdx },
-      degrees: 90,
-      left: block.left,
-      top: block.top - topMinusPoint,
-    }
-  }
-
-  const rotateDegrees180 = (block: Block) => {
-    return block
-  }
-
-  const tryToRotate = (block: Block) => {
-    const nextDegrees = block.degrees + 90 > 270 ? 0 : block.degrees + 90
-    const rotatedBlock = rotationMethod[nextDegrees](block)
-    console.log(rotatedBlock)
-    return block
-  }
-
   const rotateBlock = () => {
-    tryToRotate(currentBlock)
+    const rotatedBlock = rotationMethod[currentBlock.degrees](currentBlock)
+    setCurrentBlock(rotatedBlock)
     // const contactResult = [isLeftContact(rotatedBlock), isRightContact(rotatedBlock)]
   }
 
@@ -242,14 +196,14 @@ const Home: NextPage = () => {
 
   const blockDown: Field = useMemo(() => {
     const newField: Field = JSON.parse(JSON.stringify(baseField))
-    const blockHeight = currentBlock.shape.height
-    const blockWidth = currentBlock.shape.width
+    const blockHeight = currentBlock.height
+    const blockWidth = currentBlock.width
     const blockData: Field = [...Array(blockHeight * blockWidth)].map((__, idx) => ({
       point: [
         Math.floor(idx / blockWidth) + currentBlock.top,
         (idx % blockWidth) + currentBlock.left,
       ],
-      val: currentBlock.shape.spaceIdx.includes(idx) ? 'gray' : currentBlock.shape.color,
+      val: currentBlock.spaceIdx.includes(idx) ? 'gray' : currentBlock.color,
     }))
     return newField.map((cell) => {
       const find = blockData.find((x) => isMatch(cell.point, x.point))
@@ -261,8 +215,8 @@ const Home: NextPage = () => {
   const blockLanding: Field = useMemo(() => {
     const landedField: Field = savedField.map((cell, idx) => {
       const blockDownCell = blockDown[idx]
-      const colorValue = [cell.val, blockDownCell.val].includes(currentBlock.shape.color)
-        ? currentBlock.shape.color
+      const colorValue = [cell.val, blockDownCell.val].includes(currentBlock.color)
+        ? currentBlock.color
         : 'gray'
       return { point: cell.point, val: isLanded ? colorValue : cell.val }
     })
@@ -294,14 +248,28 @@ const Home: NextPage = () => {
       const find = blockDown.find((x) => isMatch(x.point, cell.point))
       return { ...cell, val: cell.val === 'gray' && find !== undefined ? find.val : cell.val }
     })
-  }, [blockDown, timer])
+  }, [blockDown, timer, currentBlock.degrees])
+
+  const resetParam = () => {
+    setStageN(0)
+    setSidePoint(4)
+    setCurrentBlock({
+      shapeCode: shapes[3].shapeCode,
+      height: shapes[3].height,
+      width: shapes[3].width,
+      color: shapes[3].color,
+      spaceIdx: shapes[3].originalSpaceIdx,
+      degrees: 0,
+      left: 4,
+      top: 0,
+    })
+  }
 
   const stageReset = () => {
     return new Promise((resolve, reject) => {
       setTimer(false)
       setTimeout(() => {
-        setStageN(0)
-        setSidePoint(4)
+        resetParam()
         setTimer(true)
         clearTimeout()
         resolve('clear Success!')
@@ -347,7 +315,7 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     if (timer) {
-      const timerId = setInterval(stageUp, 500)
+      const timerId = setInterval(stageUp, 1000)
       return () => clearTimeout(timerId)
     }
   }, [timer])
@@ -359,11 +327,9 @@ const Home: NextPage = () => {
 
   const onClickReset = () => {
     onClickSwitch()
-    setCurrentBlock({ ...JSON.parse(JSON.stringify(currentBlock)), top: 0, left: 4 })
+    resetParam()
     setField(JSON.parse(JSON.stringify(baseField)))
     setSavedField(JSON.parse(JSON.stringify(baseField)))
-    setStageN(0)
-    setSidePoint(4)
   }
 
   return (
