@@ -117,22 +117,23 @@ const Home: NextPage = () => {
   }
 
   const isLanded = useMemo(() => {
-    const blockHeight = currentBlock.height
-    const colLength = currentBlock.width
     const alreadyPlacedCells: Cell[] = searchAlreadPlacedCells(
-      [...Array(colLength)].map<Cell>((__, idx) => {
-        const bottomIdx = (blockHeight - 1) * colLength + idx
-        // L字が270度の時、深さが2のスペースが深さ1までしか認識できていない
-        const isEmptyCell = currentBlock.spaceIdx.includes(bottomIdx)
-        const xCoordinate = currentBlock.left + idx
-        const yCoordinate = isEmptyCell
-          ? currentBlock.top + blockHeight - 1
-          : currentBlock.top + blockHeight
+      [...Array(currentBlock.width)].map<Cell>((__, colIdx) => {
+        const currentColSpaceIdx = [...Array(currentBlock.height)]
+          .map<number>((__, rowIdx) => colIdx + currentBlock.width * rowIdx)
+          .filter((idx) => currentBlock.spaceIdx.includes(idx))
+        const isEmptyExist = currentColSpaceIdx.length > 0
+        const bottomIdx = (currentBlock.height - 1) * currentBlock.width + colIdx
+        const isEmptyLastIdxCol = currentBlock.spaceIdx.includes(bottomIdx)
+        const baseHeight = currentBlock.top + currentBlock.height
+        const xCoordinate = currentBlock.left + colIdx
+        const yCoordinate =
+          isEmptyExist && isEmptyLastIdxCol ? baseHeight - currentColSpaceIdx.length : baseHeight
         return [yCoordinate, xCoordinate]
       }),
       savedField
     )
-    return alreadyPlacedCells.length > 0 || currentBlock.top + blockHeight === 20
+    return alreadyPlacedCells.length > 0 || currentBlock.top + currentBlock.height === 20
   }, [currentBlock, savedField])
 
   const isLeftContact: boolean = useMemo(() => {
