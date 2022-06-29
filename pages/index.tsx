@@ -50,13 +50,20 @@ const Area = styled.div<{ color: string }>`
 const Home: NextPage = () => {
   type Cell = [number, number]
   type Field = { point: Cell; val: string }[]
+  type physical = { len: number; min: number; max: number }
+  type config = { heigth: physical; width: physical }
+
+  const config = {
+    height: { len: 20, min: 0, max: 19 },
+    width: { len: 10, min: 0, max: 9 },
+  }
 
   const [blocks, setBlocks] = useState([])
 
   const cellConversion = (index: number): Cell => {
-    return [Math.floor(index / 10), index % 10]
+    return [Math.floor(index / config.width.len), index % config.width.len]
   }
-  const baseField: Field = [...Array(200)].map((e, idx) => ({
+  const baseField: Field = [...Array(config.height.len * config.width.len)].map((e, idx) => ({
     point: cellConversion(idx),
     val: 'gray',
   }))
@@ -139,7 +146,7 @@ const Home: NextPage = () => {
   const isLeftContact: boolean = useMemo(() => {
     const blockHeight = currentBlock.height
     const blockWidth = currentBlock.width
-    const nextLeftPosition = currentBlock.left - 1 < 0 ? 0 : currentBlock.left - 1
+    const nextLeftPosition = currentBlock.left - 1
     const alreadyLeftPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const leftIdx = idx * blockWidth
@@ -150,14 +157,13 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return currentBlock.left === 0 || alreadyLeftPlacedCells.length > 0 || isLanded
+    return nextLeftPosition < 0 || alreadyLeftPlacedCells.length > 0 || isLanded
   }, [currentBlock, savedField])
 
   const isRightContact: boolean = useMemo(() => {
     const blockHeight = currentBlock.height
     const blockWidth = currentBlock.width
-    const nextRightPosition =
-      currentBlock.left + blockWidth > 9 ? 9 : currentBlock.left + blockWidth
+    const nextRightPosition = currentBlock.left + blockWidth
     const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(blockHeight)].map<Cell>((__, idx) => {
         const currentDepth = idx + 1
@@ -169,7 +175,7 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return currentBlock.left === 9 || alreadyRightPlacedCells.length > 0 || isLanded
+    return nextRightPosition > 9 || alreadyRightPlacedCells.length > 0 || isLanded
   }, [currentBlock, savedField])
 
   const moveLeft = () => {
