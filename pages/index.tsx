@@ -126,7 +126,7 @@ const Home: NextPage = () => {
   const isLanded = useMemo(() => {
     const alreadyPlacedCells: Cell[] = searchAlreadPlacedCells(
       [...Array(currentBlock.width)].map<Cell>((__, colIdx) => {
-        const currentColSpaceIdx = [...Array(currentBlock.height)]
+        const currentColSpaceIdx: number[] = [...Array(currentBlock.height)]
           .map<number>((__, rowIdx) => colIdx + currentBlock.width * rowIdx)
           .filter((idx) => currentBlock.spaceIdx.includes(idx))
         const isEmptyExist = currentColSpaceIdx.length > 0
@@ -143,7 +143,7 @@ const Home: NextPage = () => {
     return alreadyPlacedCells.length > 0 || currentBlock.top + currentBlock.height === 20
   }, [currentBlock, savedField])
 
-  const isLeftContact: boolean = useMemo(() => {
+  const isLeftContact = (currentBlock: Block, savedField: Field): boolean => {
     const blockHeight = currentBlock.height
     const blockWidth = currentBlock.width
     const nextLeftPosition = currentBlock.left - 1
@@ -158,9 +158,9 @@ const Home: NextPage = () => {
       savedField
     )
     return nextLeftPosition < 0 || alreadyLeftPlacedCells.length > 0 || isLanded
-  }, [currentBlock, savedField])
+  }
 
-  const isRightContact: boolean = useMemo(() => {
+  const isRightContact = (currentBlock: Block, savedField: Field): boolean => {
     const blockHeight = currentBlock.height
     const blockWidth = currentBlock.width
     const nextRightPosition = currentBlock.left + blockWidth
@@ -176,14 +176,18 @@ const Home: NextPage = () => {
       savedField
     )
     return nextRightPosition > 9 || alreadyRightPlacedCells.length > 0 || isLanded
-  }, [currentBlock, savedField])
+  }
 
   const moveLeft = () => {
-    setSidePoint((sidePoint) => (isLeftContact === false ? --sidePoint : sidePoint))
+    setSidePoint((sidePoint) =>
+      isLeftContact(currentBlock, savedField) === false ? --sidePoint : sidePoint
+    )
   }
 
   const moveRight = () => {
-    setSidePoint((sidePoint) => (isRightContact === false ? ++sidePoint : sidePoint))
+    setSidePoint((sidePoint) =>
+      isRightContact(currentBlock, savedField) === false ? ++sidePoint : sidePoint
+    )
   }
 
   const moveDown = () => {
@@ -192,12 +196,16 @@ const Home: NextPage = () => {
 
   const rotateBlock = () => {
     const rotatedBlock = rotationMethod[currentBlock.degrees](currentBlock)
-    setCurrentBlock(rotatedBlock)
-    // const contactResult = [isLeftContact(rotatedBlock), isRightContact(rotatedBlock)]
+    const contactResult = [
+      isLeftContact(rotatedBlock, savedField),
+      isRightContact(rotatedBlock, savedField),
+    ]
+    console.log(contactResult)
+    if (contactResult.every((isContact) => !isContact)) setCurrentBlock(rotatedBlock)
   }
 
-  useKey('ArrowLeft', moveLeft, {}, [isLeftContact])
-  useKey('ArrowRight', moveRight, {}, [isRightContact])
+  useKey('ArrowLeft', moveLeft, {}, [currentBlock, savedField])
+  useKey('ArrowRight', moveRight, {}, [currentBlock, savedField])
   useKey('ArrowDown', moveDown, {}, [isLanded])
   useKey('ArrowUp', rotateBlock, {}, [currentBlock])
 
