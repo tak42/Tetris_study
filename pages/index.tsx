@@ -157,7 +157,7 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return nextLeftPosition < 0 || alreadyLeftPlacedCells.length > 0 || isLanded
+    return nextLeftPosition < 0 || alreadyLeftPlacedCells.length > 0
   }
 
   const isRightContact = (currentBlock: Block, savedField: Field): boolean => {
@@ -175,7 +175,23 @@ const Home: NextPage = () => {
       }),
       savedField
     )
-    return nextRightPosition > 9 || alreadyRightPlacedCells.length > 0 || isLanded
+    return nextRightPosition > 9 || alreadyRightPlacedCells.length > 0
+  }
+
+  const isNotRotatedContact = (block: Block, savedField: Field): boolean => {
+    // searchAlreadPlacedCellsに渡すCell数はブロック数-spaceIdx数
+    const alreadyRightPlacedCells: Cell[] = searchAlreadPlacedCells(
+      [...Array(block.height)].map<Cell>((__, idx) => {
+        const currentDepth = idx + 1
+        const rightIdx = currentDepth * blockWidth - 1
+        const isEmptyCell = block.spaceIdx.includes(rightIdx)
+        const xCoordinate = isEmptyCell ? nextRightPosition - 1 : nextRightPosition
+        const yCoordinate = currentBlock.top + idx
+        return [yCoordinate, xCoordinate]
+      }),
+      savedField
+    )
+    return false
   }
 
   const moveLeft = () => {
@@ -196,18 +212,15 @@ const Home: NextPage = () => {
 
   const rotateBlock = () => {
     const rotatedBlock = rotationMethod[currentBlock.degrees](currentBlock)
-    const contactResult = [
-      isLeftContact(rotatedBlock, savedField),
-      isRightContact(rotatedBlock, savedField),
-    ]
-    console.log(contactResult)
-    if (contactResult.every((isContact) => !isContact)) setCurrentBlock(rotatedBlock)
+    console.log(rotatedBlock)
+
+    if (isNotRotatedContact(rotatedBlock, savedField)) setCurrentBlock(rotatedBlock)
   }
 
   useKey('ArrowLeft', moveLeft, {}, [currentBlock, savedField])
   useKey('ArrowRight', moveRight, {}, [currentBlock, savedField])
   useKey('ArrowDown', moveDown, {}, [isLanded])
-  useKey('ArrowUp', rotateBlock, {}, [currentBlock])
+  useKey('ArrowUp', rotateBlock, {}, [currentBlock, savedField])
 
   const blockDown: Field = useMemo(() => {
     const newField: Field = JSON.parse(JSON.stringify(baseField))
